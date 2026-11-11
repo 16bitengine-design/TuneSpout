@@ -16,11 +16,21 @@ import soundfile as sf
 import music
 import render
 import tts
+from metadata import write_metadata
 from safety import check_lesson
 
 FPS = 24
 SR = tts.SR
 PAUSE = 0.6  # seconds of breathing room after each line
+
+
+def make_vertical(src, dst):
+    """9:16 copy for TikTok: the video centered on a sky-blue top and green bottom."""
+    graph = ("color=c=0x8fd0f8:s=1080x1920,drawbox=y=1100:w=1080:h=820:color=0x78c86e:t=fill[bg];"
+             "[0:v]scale=1080:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2:shortest=1,format=yuv420p")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src),
+                    "-filter_complex", graph, "-c:v", "libx264", "-preset", "veryfast",
+                    "-c:a", "copy", str(dst)], check=True)
 
 
 def main():
@@ -71,10 +81,10 @@ def main():
     if proc.wait() != 0:
         raise SystemExit("ffmpeg failed")
 
-    # 3) metadata for the uploader
-    meta = {k: lesson[k] for k in ("title", "description", "tags") if k in lesson}
-    (out / "meta.json").write_text(json.dumps(meta, indent=2))
-    print(f"Done: {mp4} ({sum(durations):.1f}s)")
+    # 3) automatic titles, descriptions and hashtags, plus the vertical TikTok version
+    write_metadata(lesson, out)
+    make_vertical(mp4, out / "video_vertical.mp4")
+    print(f"Done: {mp4} and video_vertical.mp4 ({sum(durations):.1f}s)")
 
 
 if __name__ == "__main__":

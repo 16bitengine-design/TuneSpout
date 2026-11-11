@@ -1,16 +1,18 @@
 """Checks lessons are kid-safe, the math is right, and every scene draws.
 Run: python -m pytest tests"""
 import json
+import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
+import metadata  # noqa: E402
 import music  # noqa: E402
 import render  # noqa: E402
 from generators import GENERATORS, generate  # noqa: E402
-from safety import check_lesson  # noqa: E402
+from safety import BLOCKLIST, check_lesson  # noqa: E402
 
 
 def _check_equation(eq):
@@ -53,6 +55,22 @@ def test_every_scene_renders():
             for t in (0.0, 1.0):
                 img = render.draw_scene(sc, t, size=(320, 180))
                 assert img.size == (320, 180)
+
+
+def test_automatic_metadata():
+    for topic in GENERATORS:
+        lesson = generate(topic, 3)
+        yt, tt = metadata.youtube(lesson), metadata.tiktok(lesson)
+        assert 0 < len(yt["title"]) <= 100
+        assert yt["description"].count("#") <= 15  # YouTube ignores hashtags past 15
+        assert len(tt["caption"]) <= 2200
+        assert 3 <= tt["caption"].count("#") <= 5
+        assert tt["is_aigc"] is True
+        # generated text must avoid unsafe words (the fixed parent note is allowed
+        # to say "no scary content", so it is skipped)
+        text = " ".join([yt["title"], tt["caption"]] + [
+            ln for ln in yt["description"].splitlines() if not ln.startswith("For parents")])
+        assert not BLOCKLIST.intersection(re.findall(r"[a-zA-Z']+", text.lower()))
 
 
 def test_tunes_have_right_length():

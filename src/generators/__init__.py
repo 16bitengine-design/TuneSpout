@@ -14,4 +14,6 @@ TOPICS = list(GENERATORS)
 
 
 def generate(topic: str, seed: int) -> dict:
-    return GENERATORS[topic](seed)
+    lesson = GENERATORS[topic](seed)
+    lesson["topic"] = topic  # used for automatic descriptions and hashtags
+    return lesson

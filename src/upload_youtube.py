@@ -1,7 +1,7 @@
 """Upload out/video.mp4 to YouTube, marked "made for kids".
 
 Needs three GitHub secrets: YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN
-(see README, step 4). Defaults to PRIVATE so you can review before publishing.
+(see README). Defaults to PRIVATE so you can review before publishing.
 """
 import json
 import os
@@ -27,8 +27,7 @@ def main(out_dir="out"):
     body = {
         "snippet": {
             "title": meta["title"][:100],
-            "description": meta.get("description", "")
-            + "\n\nMade with code. Safe, gentle learning for kids.",
+            "description": meta.get("description", ""),  # built by src/metadata.py
             "tags": meta.get("tags", []),
             "categoryId": "27",  # Education
         },

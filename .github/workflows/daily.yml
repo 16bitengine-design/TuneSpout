@@ -1,4 +1,4 @@
-name: Make and upload a lesson video
+name: Make and post a lesson video
 
 on:
   schedule:
@@ -13,6 +13,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      # a platform is skipped until its secrets are added
+      YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+      TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,18 +31,26 @@ jobs:
           pip install -r requirements.txt
       - name: Generate today's lesson (nothing is stored in the repo)
         run: python src/generate_lesson.py --topic "${{ github.event.inputs.topic || 'auto' }}" --out out/lesson.json
-      - name: Build video
+      - name: Build videos, descriptions and hashtags
         run: python src/make_video.py out/lesson.json
-      - name: Keep a copy of the video
+      - name: Keep a copy of the videos
         uses: actions/upload-artifact@v4
         with:
           name: video
           path: out/
           retention-days: 7
-      - name: Upload to YouTube
+      - name: Post to YouTube
+        if: ${{ env.YT_REFRESH_TOKEN != '' }}
         env:
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
-          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           PRIVACY: private   # change to public only after you trust the output
         run: python src/upload_youtube.py out
+      - name: Post to TikTok
+        # always(): still try TikTok if YouTube failed, so one problem does not block both
+        if: ${{ always() && env.TIKTOK_REFRESH_TOKEN != '' }}
+        env:
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          TIKTOK_PRIVACY: SELF_ONLY   # TikTok forces private until your app is audited
+        run: python src/upload_tiktok.py out
