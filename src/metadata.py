@@ -26,6 +26,15 @@ TOPIC_INFO = {
     "plurals": {"skill": "plural words: one and many", "ages": "ages 4 to 8",
                 "tags": ["plurals", "englishforkids", "learnenglish", "grammarforkids"],
                 "hooks": ["One or many? You decide!", "Add an s to make more!"]},
+    "sports": {"skill": "the names of sports and how we play them", "ages": "ages 3 to 8",
+               "tags": ["sportsforkids", "kidsexercise", "learnsports", "activekids"],
+               "hooks": ["Which sport is your favorite?", "Let us move and learn!"]},
+    "teamscore": {"skill": "adding team goals together", "ages": "ages 5 to 8",
+                  "tags": ["sportsmath", "addition", "teamwork", "mathforkids"],
+                  "hooks": ["Add up the goals with us!", "Teams count together!"]},
+    "fairplay": {"skill": "playing fair, taking turns and cheering for friends", "ages": "ages 4 to 9",
+                 "tags": ["fairplay", "teamwork", "kindness", "sportsforkids"],
+                 "hooks": ["Fair play makes everyone smile!", "Take turns and cheer!"]},
 }
 COMMON_TAGS = ["kidslearning", "educationalvideos", "cartoonsforkids", "kidssongs", "learningforkids"]
 FALLBACK = {"skill": "learning something new", "ages": "ages 3 to 10",

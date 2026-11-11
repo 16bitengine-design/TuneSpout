@@ -7,7 +7,7 @@ Makes short, gentle learning videos for kids under 12. Kids are the main charact
 **Pipeline:** `src/generators` makes today's lesson -> Kokoro voice (pitched up to sound younger) -> public-domain tune played by code -> cartoon kids and objects drawn by code -> ffmpeg (16:9 for YouTube, 9:16 for TikTok) -> automatic title, description and hashtags -> YouTube (marked "made for kids") and TikTok (labelled as AI-generated).
 
 ## Topics built so far
-`counting`, `addition`, `subtraction`, `multiplication`, `division` (fair sharing), `plurals`.
+`counting`, `addition`, `subtraction`, `multiplication`, `division` (fair sharing), `plurals`, and sports: `sports` (names of sports), `teamscore` (adding team goals), `fairplay` (turns, sharing, cheering).
 `--topic auto` rotates through them by date. Every lesson picks different kids (varied skin tones, hair and clothes), objects, numbers and a tune.
 
 ## Try it on your computer
