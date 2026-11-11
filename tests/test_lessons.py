@@ -73,6 +73,53 @@ def test_automatic_metadata():
         assert not BLOCKLIST.intersection(re.findall(r"[a-zA-Z']+", text.lower()))
 
 
+def test_every_object_draws_and_unknown_words_get_one():
+    import random
+    from PIL import Image, ImageDraw
+    from characters import library
+    from characters.items import draw_item
+    img = Image.new("RGB", (200, 200)); d = ImageDraw.Draw(img)
+    legacy = ["apple", "star", "ball", "flower"]
+    rng = random.Random(1)
+    words = ["".join(rng.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(rng.randint(3, 9)))
+             for _ in range(300)]
+    for name in list(library.LIBRARY) + legacy + words:
+        for ghost in (False, True):
+            draw_item(d, name, 100, 100, 40, group=2, ghost=ghost, t=0.4, phase=1.0)
+    # the same word always gives the same invented object
+    assert library.invent_recipe("rocket") == library.invent_recipe("rocket")
+    # across many words, invented objects are not all the same design
+    assert len({str(library.invent_recipe(w)) for w in words}) > 100
+    from generators.common import ITEMS
+    for name in ITEMS:
+        assert name in library.LIBRARY or name in legacy, f"{name} has no drawing recipe"
+
+
+def test_invented_creatures_are_deterministic_and_safe():
+    import random
+    from PIL import Image, ImageDraw
+    from characters import creatures
+    img = Image.new("RGB", (300, 300)); d = ImageDraw.Draw(img)
+    for seed in range(300):
+        assert creatures.genome(seed) == creatures.genome(seed)
+        name = creatures.make_name(random.Random(seed))
+        assert name and not any(b in name.lower() for b in creatures.BANNED_PIECES), name
+        creatures.draw_creature(d, 150, 280, 2.0, 0.3, 0.0, creatures.genome(seed))
+    # the whole set of invented looks is varied, not one design repeated
+    looks = {tuple(sorted((k, str(v)) for k, v in creatures.genome(s).items())) for s in range(50)}
+    assert len(looks) > 40
+
+
+def test_lessons_with_pals_keep_kids_as_stars():
+    for topic in GENERATORS:
+        for seed in range(40):
+            lesson = generate(topic, seed)
+            for sc in lesson["scenes"]:
+                assert len(sc.get("pals", [])) <= 1
+                if sc.get("pals"):
+                    assert len(sc["kids"]) >= 1  # a pal never appears without a kid
+
+
 def test_tunes_have_right_length():
     for name in music.TUNES:
         assert len(music.tune_track(name, 3.0)) == 3 * music.SR

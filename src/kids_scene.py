@@ -10,6 +10,7 @@ Scene keys (all optional except line):
 from PIL import Image, ImageDraw
 
 import render
+from characters.creatures import draw_creature, genome
 from characters.items import draw_item
 from characters.kids import draw_kid
 
@@ -38,6 +39,11 @@ def draw_kids_scene(scene, t, size=(render.W, render.H)):
     for i, (kid, fx) in enumerate(zip(kids, xs)):
         draw_kid(d, w * fx, h * 0.74, SS * 1.2, t, phase=i * 1.3,
                  cheer=bool(scene.get("cheer")), **_clean_kid(kid))
+
+    # an invented sidekick stands between a kid and the middle of the scene
+    for i, pal in enumerate(scene.get("pals", [])):
+        fx = 0.30 + 0.40 * i if len(kids) != 1 else 0.28
+        draw_creature(d, w * fx, h * 0.74, SS * 1.0, t, i * 0.8, genome(pal["seed"]))
 
     items = scene.get("items")
     if items:

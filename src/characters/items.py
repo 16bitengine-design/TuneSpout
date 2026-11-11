@@ -14,6 +14,10 @@ GHOST_LINE = (180, 190, 205)
 
 
 def draw_item(d, kind, x, y, r, group=0, ghost=False, t=0.0, phase=0.0):
+    if kind not in COLORS:  # recipe objects bob by themselves
+        from characters.library import draw_named
+        draw_named(d, kind, x, y, r * 1.05, group, ghost, t, phase)
+        return
     y += math.sin(t * 3 + phase) * r * 0.08
     cols = COLORS.get(kind, COLORS["apple"])
     col = cols[group % len(cols)]

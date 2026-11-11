@@ -48,6 +48,14 @@ Add each platform's secrets under Repo Settings -> Secrets and variables -> Acti
 
 New drawable things go in `src/characters/` (kids, items). Hand-written lessons can still live in `lessons/` as JSON (see `docs/lesson-format.md`).
 
+## Invented characters and objects
+The system makes its own visuals for each video, with no drawings to store:
+- **Objects:** `src/characters/library.py` holds drawing recipes (small lists of shapes) for about 20 things such as kites, cakes, books and umbrellas. A word with no recipe still gets an object: the inventor builds a friendly one from the word, with a random body, decorations and face. The same word always looks the same. Invented objects are abstract shapes, not literal pictures; add a recipe to the library when you want a word drawn properly.
+- **Sidekicks:** `src/characters/creatures.py` invents a small friendly creature (colors, ears, tail, pattern and a made-up name like "Funim") for about 60% of lessons. Kids stay the main characters; the sidekick just stands beside them.
+- **Kids:** every lesson picks kids with different skin tones, hair and clothes.
+- **Safety:** designs are round and gentle, and invented names are checked against the blocked words, including inside longer names.
+To add a new object, add one entry to `LIBRARY` (see the shape format at the top of `src/characters/shapes.py`).
+
 ## Songs
 Tunes are public-domain melodies (Twinkle Twinkle, Mary Had a Little Lamb, Row Row Row Your Boat) written as notes in `src/music.py` and played by code, so there are no recording rights to worry about. Add more by listing notes. Only add melodies that are clearly public domain.
 
