@@ -1,0 +1,15 @@
+{
+  "title": "Count the Ducks! | Counting 1 to 5 Song for Kids",
+  "description": "Count little ducks from 1 to 5 with a happy song! Great for toddlers and kids learning numbers.",
+  "tags": ["counting", "numbers", "kids song", "learn to count", "ducks"],
+  "voice": "af_heart",
+  "speed": 0.9,
+  "pitch": 1.2,
+  "scenes": [
+    {"animal": "duck", "count": 1, "line": "One little duck is swimming in the pond. Quack!"},
+    {"animal": "duck", "count": 2, "line": "Two little ducks, they are splashing all day long. Quack quack!"},
+    {"animal": "duck", "count": 3, "line": "Three little ducks, come and join the happy song!"},
+    {"animal": "duck", "count": 4, "line": "Four little ducks are dancing on the shore."},
+    {"animal": "duck", "count": 5, "line": "Five little ducks! Now let us count once more!"}
+  ]
+}

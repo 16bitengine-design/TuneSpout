@@ -1,0 +1,41 @@
+name: Make and upload a lesson video
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # every day at 06:00 UTC
+  workflow_dispatch:       # lets you run it by hand from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: System packages (ffmpeg, espeak for Kokoro, fonts)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng fonts-dejavu-core
+      - name: Python packages (CPU-only torch keeps the download small)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: Pick today's lesson
+        id: pick
+        run: echo "file=$(python src/pick_lesson.py)" >> "$GITHUB_OUTPUT"
+      - name: Build video
+        run: python src/make_video.py "${{ steps.pick.outputs.file }}"
+      - name: Keep a copy of the video
+        uses: actions/upload-artifact@v4
+        with:
+          name: video
+          path: out/
+          retention-days: 7
+      - name: Upload to YouTube
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          PRIVACY: private   # change to public only after you trust the output
+        run: python src/upload_youtube.py out
