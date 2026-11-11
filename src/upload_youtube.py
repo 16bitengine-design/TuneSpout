@@ -42,6 +42,13 @@ def main(out_dir="out"):
     while resp is None:
         _, resp = req.next_chunk()
     print("Uploaded:", f"https://youtu.be/{resp['id']}")
+    thumb = out / "thumbnail.png"
+    if thumb.exists():
+        try:  # custom thumbnails need a verified YouTube channel; do not fail the upload over it
+            yt.thumbnails().set(videoId=resp["id"], media_body=MediaFileUpload(str(thumb))).execute()
+            print("Thumbnail set.")
+        except Exception as err:
+            print("Could not set the thumbnail (is the channel verified?):", err)
 
 
 if __name__ == "__main__":

@@ -120,6 +120,23 @@ def test_lessons_with_pals_keep_kids_as_stars():
                     assert len(sc["kids"]) >= 1  # a pal never appears without a kid
 
 
+def test_brand_images_and_thumbnails(tmp_path):
+    import branding
+    for topic in GENERATORS:
+        for seed in (1, 2, 3):
+            lesson = json.loads(json.dumps(generate(topic, seed)))
+            img = branding.thumbnail(lesson)
+            assert img.size == (1280, 720)
+            path = tmp_path / f"{topic}{seed}.png"
+            img.save(path, optimize=True)
+            assert path.stat().st_size < 2_000_000, "YouTube thumbnails must be under 2 MB"
+    assert branding.avatar(800).size == (800, 800)
+    wm = branding.watermark(150)
+    assert wm.size == (150, 150) and wm.mode == "RGBA" and wm.getpixel((0, 0))[3] == 0  # transparent corner
+    assert branding.banner(1280, 720).size == (1280, 720)
+    assert branding.tiktok_cover(540, 960).size == (540, 960)
+
+
 def test_tunes_have_right_length():
     for name in music.TUNES:
         assert len(music.tune_track(name, 3.0)) == 3 * music.SR

@@ -28,19 +28,21 @@ def font(size: int):
     return ImageFont.load_default(size)
 
 
-def background(d, w, h, t, pond=True):
+def background(d, w, h, t, pond=True, u=None):
+    """Sky, sun, clouds and hills. `u` sizes the sun and clouds (default: video size)."""
+    u = u or SS
     # sky gradient
     for y in range(h):
         k = y / h
         d.line([(0, y), (w, y)], fill=(int(135 + 90 * k), int(206 + 30 * k), 250))
     # sun
-    ellipse(d, w * 0.88, h * 0.16, 70 * SS, 70 * SS, (255, 223, 80))
+    ellipse(d, w * 0.88, h * 0.16, 70 * u, 70 * u, (255, 223, 80))
     # drifting clouds
     for i, base in enumerate([0.15, 0.5, 0.75]):
-        cx = ((base * w + t * 20 * SS * (1 + i * 0.3)) % (w + 400 * SS)) - 200 * SS
+        cx = ((base * w + t * 20 * u * (1 + i * 0.3)) % (w + 400 * u)) - 200 * u
         cy = h * (0.12 + 0.07 * i)
         for dx, r in [(-45, 38), (0, 50), (50, 38)]:
-            ellipse(d, cx + dx * SS, cy, r * SS, r * 0.75 * SS, (255, 255, 255))
+            ellipse(d, cx + dx * u, cy, r * u, r * 0.75 * u, (255, 255, 255))
     # hills and pond
     ellipse(d, w * 0.25, h * 1.05, w * 0.6, h * 0.35, (120, 200, 110))
     ellipse(d, w * 0.85, h * 1.1, w * 0.6, h * 0.4, (96, 180, 96))
@@ -78,6 +80,8 @@ ANIMALS = {"duck": draw_duck, "chick": draw_chick, "fish": draw_fish}
 
 def draw_caption(d, w, h, line):
     """White caption box at the bottom showing the spoken line."""
+    if not line:  # thumbnails have no caption
+        return
     cf = font(34 * SS)
     wrapped = "\n".join(textwrap.wrap(line, 42))
     box_h = 40 * SS * (wrapped.count("\n") + 1) + 40 * SS

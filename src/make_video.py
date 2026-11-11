@@ -16,6 +16,7 @@ import soundfile as sf
 import music
 import render
 import tts
+import branding
 from metadata import write_metadata
 from safety import check_lesson
 
@@ -83,6 +84,10 @@ def main():
 
     # 3) automatic titles, descriptions and hashtags, plus the vertical TikTok version
     write_metadata(lesson, out)
+    try:
+        branding.thumbnail(lesson).save(out / "thumbnail.png", optimize=True)
+    except StopIteration:  # a hand-written lesson with no kids: no thumbnail
+        print("No kids in this lesson, so no thumbnail was made.")
     make_vertical(mp4, out / "video_vertical.mp4")
     print(f"Done: {mp4} and video_vertical.mp4 ({sum(durations):.1f}s)")
 

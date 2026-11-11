@@ -20,7 +20,7 @@ python src/make_video.py out/lesson.json
 python src/make_video.py out/lesson.json --fake-tts
 python -m pytest tests                 # checks safety, math and drawing
 ```
-Result in `out/`: `video.mp4` (YouTube), `video_vertical.mp4` (TikTok), `meta.json` (YouTube title, description, tags) and `tiktok.json` (caption with hashtags).
+Result in `out/`: `video.mp4` (YouTube), `thumbnail.png`, `video_vertical.mp4` (TikTok), `meta.json` (YouTube title, description, tags) and `tiktok.json` (caption with hashtags).
 
 ## Put it on GitHub and automate it
 Add each platform's secrets under Repo Settings -> Secrets and variables -> Actions. A platform with no secrets is skipped, so you can start with one.
@@ -55,6 +55,9 @@ The system makes its own visuals for each video, with no drawings to store:
 - **Kids:** every lesson picks kids with different skin tones, hair and clothes.
 - **Safety:** designs are round and gentle, and invented names are checked against the blocked words, including inside longer names.
 To add a new object, add one entry to `LIBRARY` (see the shape format at the top of `src/characters/shapes.py`).
+
+## Branding
+The channel brand (name **TuneSpout**, mascot Spout, colors, Fredoka font, bios) is in `branding/BRAND.md`. Ready-to-upload images are in `branding/`: profile picture (YouTube and TikTok), YouTube banner and watermark, and a TikTok cover. Regenerate them with `python tools/make_brand_assets.py`. Every video also gets its own thumbnail (`out/thumbnail.png`, 1280x720), built from the lesson's kids and objects and set on YouTube after upload.
 
 ## Songs
 Tunes are public-domain melodies (Twinkle Twinkle, Mary Had a Little Lamb, Row Row Row Your Boat) written as notes in `src/music.py` and played by code, so there are no recording rights to worry about. Add more by listing notes. Only add melodies that are clearly public domain.
