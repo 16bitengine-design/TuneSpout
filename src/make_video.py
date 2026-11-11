@@ -1,8 +1,9 @@
 """Build one video from a lesson JSON.
 
 Usage:
-  python src/make_video.py lessons/counting_ducks.json            # real Kokoro voice
-  python src/make_video.py lessons/counting_ducks.json --fake-tts # offline test
+  python src/generate_lesson.py --topic addition --out out/lesson.json
+  python src/make_video.py out/lesson.json              # real Kokoro voice
+  python src/make_video.py out/lesson.json --fake-tts   # offline test
 """
 import argparse
 import json
@@ -45,7 +46,9 @@ def main():
         durations.append(len(a) / SR)
 
     voice = np.concatenate(clips)
-    bed = music.backing_track(len(voice) / SR)
+    seconds = len(voice) / SR
+    tune = lesson.get("tune")
+    bed = music.tune_track(tune, seconds) if tune else music.backing_track(seconds)
     mix = np.clip(voice[: len(bed)] + bed[: len(voice)], -1, 1)
     wav = out / "audio.wav"
     sf.write(wav, mix, SR)

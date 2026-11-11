@@ -3,7 +3,11 @@ name: Make and upload a lesson video
 on:
   schedule:
     - cron: "0 6 * * *"   # every day at 06:00 UTC
-  workflow_dispatch:       # lets you run it by hand from the Actions tab
+  workflow_dispatch:       # run by hand from the Actions tab
+    inputs:
+      topic:
+        description: "auto, counting, addition, subtraction, multiplication, division or plurals"
+        default: "auto"
 
 jobs:
   build:
@@ -21,11 +25,10 @@ jobs:
         run: |
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
-      - name: Pick today's lesson
-        id: pick
-        run: echo "file=$(python src/pick_lesson.py)" >> "$GITHUB_OUTPUT"
+      - name: Generate today's lesson (nothing is stored in the repo)
+        run: python src/generate_lesson.py --topic "${{ github.event.inputs.topic || 'auto' }}" --out out/lesson.json
       - name: Build video
-        run: python src/make_video.py "${{ steps.pick.outputs.file }}"
+        run: python src/make_video.py out/lesson.json
       - name: Keep a copy of the video
         uses: actions/upload-artifact@v4
         with:

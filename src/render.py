@@ -7,6 +7,8 @@ import math
 import textwrap
 from PIL import Image, ImageDraw, ImageFont
 
+from characters.common import ellipse
+
 W, H = 1280, 720
 SS = 2  # supersampling for smooth edges
 
@@ -26,11 +28,7 @@ def font(size: int):
     return ImageFont.load_default(size)
 
 
-def ellipse(d, cx, cy, rx, ry, fill, outline=None, width=0):
-    d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=fill, outline=outline, width=width)
-
-
-def background(d, w, h, t):
+def background(d, w, h, t, pond=True):
     # sky gradient
     for y in range(h):
         k = y / h
@@ -46,7 +44,8 @@ def background(d, w, h, t):
     # hills and pond
     ellipse(d, w * 0.25, h * 1.05, w * 0.6, h * 0.35, (120, 200, 110))
     ellipse(d, w * 0.85, h * 1.1, w * 0.6, h * 0.4, (96, 180, 96))
-    ellipse(d, w * 0.5, h * 0.78, w * 0.42, h * 0.13, (80, 170, 230))
+    if pond:
+        ellipse(d, w * 0.5, h * 0.78, w * 0.42, h * 0.13, (80, 170, 230))
 
 
 def draw_duck(d, cx, cy, s, t, phase, color=(255, 214, 51)):
@@ -77,8 +76,22 @@ def draw_fish(d, cx, cy, s, t, phase):
 ANIMALS = {"duck": draw_duck, "chick": draw_chick, "fish": draw_fish}
 
 
+def draw_caption(d, w, h, line):
+    """White caption box at the bottom showing the spoken line."""
+    cf = font(34 * SS)
+    wrapped = "\n".join(textwrap.wrap(line, 42))
+    box_h = 40 * SS * (wrapped.count("\n") + 1) + 40 * SS
+    d.rounded_rectangle([60 * SS, h - box_h - 30 * SS, w - 60 * SS, h - 30 * SS],
+                        radius=28 * SS, fill=(255, 255, 255))
+    d.multiline_text((w / 2, h - 30 * SS - box_h / 2), wrapped, font=cf,
+                     fill=(60, 60, 90), anchor="mm", align="center")
+
+
 def draw_scene(scene: dict, t: float, size=(W, H)):
     """Return a PIL image for scene at time t (seconds)."""
+    if "kids" in scene or "items" in scene:
+        from kids_scene import draw_kids_scene  # lazy: kids_scene imports this module
+        return draw_kids_scene(scene, t, size)
     w, h = size[0] * SS, size[1] * SS
     img = Image.new("RGB", (w, h))
     d = ImageDraw.Draw(img)
@@ -102,13 +115,5 @@ def draw_scene(scene: dict, t: float, size=(W, H)):
     f = font(120 * SS)
     d.text((bx, by), str(count), font=f, fill=(255, 105, 135), anchor="mm")
 
-    # caption box
-    line = scene.get("line", "")
-    cf = font(34 * SS)
-    wrapped = "\n".join(textwrap.wrap(line, 42))
-    box_h = 40 * SS * (wrapped.count("\n") + 1) + 40 * SS
-    d.rounded_rectangle([60 * SS, h - box_h - 30 * SS, w - 60 * SS, h - 30 * SS],
-                        radius=28 * SS, fill=(255, 255, 255))
-    d.multiline_text((w / 2, h - 30 * SS - box_h / 2), wrapped, font=cf,
-                     fill=(60, 60, 90), anchor="mm", align="center")
+    draw_caption(d, w, h, scene.get("line", ""))
     return img.resize(size, Image.LANCZOS)
