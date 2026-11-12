@@ -142,14 +142,20 @@ def test_tunes_have_right_length():
         assert len(music.tune_track(name, 3.0)) == 3 * music.SR
 
 
-def test_long_lessons_split_into_two_minute_episodes_at_scene_boundaries():
+def test_long_lessons_split_into_parts_of_at_most_three_minutes():
+    import random
+
     import episodes
-    assert episodes.split([10.0] * 17) == [(0, 17)]                  # 170 s: stays one video
-    assert episodes.split([10.0] * 25) == [(0, 12), (12, 25)]        # a short tail folds into the last episode
-    assert episodes.split([10.0] * 60) == [(i * 12, i * 12 + 12) for i in range(5)]
-    ranges = episodes.split([7.0] * 80)
-    assert ranges[0][0] == 0 and ranges[-1][1] == 80
-    assert all(prev[1] == nxt[0] for prev, nxt in zip(ranges, ranges[1:])), "no scene lost or repeated"
+    assert episodes.split([10.0] * 18) == [(0, 18)]                  # exactly 180 s: one video
+    assert episodes.split([10.0] * 19) == [(0, 10), (10, 19)]        # 190 s: two even parts
+    assert episodes.split([10.0] * 60) == [(i * 15, i * 15 + 15) for i in range(4)]  # 600 s: 4 x 150 s
+    rng = random.Random(5)
+    for _ in range(200):                                             # any mix of scene lengths
+        durs = [rng.uniform(2, 25) for _ in range(rng.randint(20, 90))]
+        ranges = episodes.split(durs)
+        assert ranges[0][0] == 0 and ranges[-1][1] == len(durs)
+        assert all(a[1] == b[0] for a, b in zip(ranges, ranges[1:])), "no scene lost or repeated"
+        assert all(sum(durs[a:b]) <= 180 for a, b in ranges), "a part ran over three minutes"
     assert episodes.episode_title("Add!", 2, 3) == "Add! (Part 2 of 3)"
     assert episodes.episode_title("Add!", 1, 1) == "Add!"
 

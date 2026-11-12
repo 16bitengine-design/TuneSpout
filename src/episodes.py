@@ -1,30 +1,34 @@
-"""Split a long lesson into episodes of about two minutes.
+"""Split a long lesson into parts that are never longer than three minutes.
 
 A lesson up to three minutes stays one video. A longer one is cut at scene
-boundaries (never in the middle of a line) into episodes near two minutes.
+boundaries (never in the middle of a line) into the fewest parts that fit,
+made as equal in length as the scenes allow.
 """
-TARGET = 120.0   # seconds an episode should be about
-LIMIT = 180.0    # longer than this gets split
-MIN_TAIL = 45.0  # a short last piece is folded into the episode before it
+import math
+
+LIMIT = 180.0  # the longest any part may be, in seconds
 
 
-def split(durations, target=TARGET, limit=LIMIT, min_tail=MIN_TAIL):
+def split(durations, limit=LIMIT):
     """Scene lengths in seconds -> list of (first, last_exclusive) scene ranges."""
-    n = len(durations)
-    if sum(durations) <= limit:
+    total, n = sum(durations), len(durations)
+    if total <= limit:
         return [(0, n)]
-    ranges, start, acc = [], 0, 0.0
-    for i, d in enumerate(durations):
-        acc += d
-        if acc >= target:
-            ranges.append((start, i + 1))
-            start, acc = i + 1, 0.0
-    if start < n:
-        if ranges and acc < min_tail:
-            ranges[-1] = (ranges[-1][0], n)
-        else:
-            ranges.append((start, n))
-    return ranges
+    parts = math.ceil(total / limit)
+    while True:
+        target = total / parts
+        ranges, start, acc = [], 0, 0.0
+        for i, d in enumerate(durations):
+            # close the part when adding this scene would pass the limit,
+            # or when it has reached its fair share (and more parts remain)
+            if acc and (acc + d > limit or (acc >= target and len(ranges) < parts - 1)):
+                ranges.append((start, i))
+                start, acc = i, 0.0
+            acc += d
+        ranges.append((start, n))
+        if all(sum(durations[a:b]) <= limit or b - a == 1 for a, b in ranges):
+            return ranges
+        parts += 1  # uneven scenes made a part too long: use one more part
 
 
 def episode_title(title, number, total):
