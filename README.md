@@ -59,6 +59,9 @@ The system makes its own visuals for each video, with no drawings to store:
 - **Safety:** designs are round and gentle, and invented names are checked against the blocked words, including inside longer names.
 To add a new object, add one entry to `LIBRARY` (see the shape format at the top of `src/characters/shapes.py`).
 
+## Animal lessons
+`animalsounds` (what the cow says) and `babyanimals` (a baby cow is a calf) use nine drawn farm animals: dog, cat, cow, duck, sheep, pig, chicken, horse and frog. Add more in `src/characters/animals.py` with their sound and baby name.
+
 ## The cast
 Four main kids (Amina, Leo, Mei, Kofi) and two animal friends (Pip and Mo) appear in every video, always looking the same. Two to three kids from the cast lead each lesson. Two small background kids with random looks stand behind them: these are extras, made fresh for each video. To change the cast, edit `src/characters/cast.py`. `branding/cast.png` is a picture of everyone for channel art.
 

@@ -212,3 +212,32 @@ def test_long_lessons_are_safe_long_enough_and_fit_in_parts():
         durs = [len(sc["line"].split()) / 2.2 + 0.6 for sc in lesson["scenes"]]
         parts = episodes.split(durs)
         assert len(parts) >= 3 and all(sum(durs[a:b]) <= 180 for a, b in parts)
+
+
+def test_animal_lessons_teach_the_right_facts_and_every_animal_is_drawn():
+    from PIL import Image, ImageDraw
+
+    from characters.animals import ANIMALS
+    from characters.library import draw_named
+    facts = {"dog": ("woof", "puppy"), "cat": ("meow", "kitten"), "cow": ("moo", "calf"),
+             "sheep": ("baa", "lamb"), "pig": ("oink", "piglet"), "frog": ("ribbit", "tadpole")}
+    for name, (sound, baby) in facts.items():
+        assert ANIMALS[name] == {"sound": sound, "baby": baby}
+    for animal, info in ANIMALS.items():
+        for thing in (animal, info["baby"]):
+            img = Image.new("RGB", (200, 200), (255, 255, 255))
+            draw_named(ImageDraw.Draw(img), thing, 100, 100, 80)
+            painted = sum(1 for px in img.getdata() if px != (255, 255, 255))
+            assert painted > 300, f"{thing} is barely drawn"
+    for seed in range(30):
+        sounds = generate("animalsounds", seed)
+        for sc in sounds["scenes"]:
+            if "items" in sc and sc["items"]["type"] in ANIMALS:
+                kind = sc["items"]["type"]
+                if "says" in sc["line"]:
+                    assert ANIMALS[kind]["sound"] in sc["line"]
+        babies = generate("babyanimals", seed)
+        for sc in babies["scenes"]:
+            if "is called a" in sc["line"]:
+                adult, baby = sc["items"]["types"]
+                assert sc["line"] == f"A baby {adult} is called a {ANIMALS[adult]['baby']}!" and baby == ANIMALS[adult]["baby"]

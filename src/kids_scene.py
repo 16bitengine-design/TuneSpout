@@ -2,7 +2,8 @@
 
 Scene keys (all optional except line):
   kids:     list of kid dicts (max 2 looks best)
-  items:    {type, count, split:[group sizes], new_from, ghost}
+  items:    {type, count, split:[group sizes], new_from, ghost, scale, types}
+            scale makes each thing bigger (1 = counting size); types gives one thing per group
   equation: big text banner, e.g. "2 + 3 = 5"
   pals:     animal friends: {"cast": "pip"} for a cast animal, or {"seed": n} for an invented one
   extras:   small background kids (no names), drawn behind the main kids
@@ -72,7 +73,8 @@ def draw_kids_scene(scene, t, size=(render.W, render.H)):
                 pop = 1.0 if idx < new_from else min(1.0, max(0.0, (t - (idx - new_from) * 0.25) / 0.3))
                 if pop > 0:
                     x = x0 + idx * spacing + gi * gapx
-                    draw_item(d, items["type"], x, h * 0.42, spacing * 0.4 * (0.5 + 0.5 * pop),
+                    kind = items["types"][gi] if items.get("types") else items["type"]
+                    draw_item(d, kind, x, h * 0.42, spacing * 0.4 * items.get("scale", 1) * (0.5 + 0.5 * pop),
                               group=gi, ghost=idx >= total - ghost and ghost > 0, t=t, phase=idx * 0.7)
                 idx += 1
 

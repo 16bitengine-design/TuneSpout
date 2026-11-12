@@ -227,6 +227,7 @@ HEADLINES = {
     "counting": "COUNT WITH US!", "addition": "LET'S ADD!", "subtraction": "TAKE AWAY!",
     "multiplication": "TIMES TABLES!", "division": "SHARE FAIRLY!", "plurals": "ONE & MANY!",
     "sports": "FUN SPORTS!", "teamscore": "TEAM GOALS!", "fairplay": "PLAY FAIR!",
+    "animalsounds": "ANIMAL SOUNDS!", "babyanimals": "BABY ANIMALS!",
 }
 
 
@@ -255,14 +256,15 @@ def thumbnail(lesson, w=1280, h=720):
     n = len(order)
     per_row = n if n <= 5 else (5 if n <= 10 else 7)
     rows = math.ceil(n / per_row)
-    r = min(70, 700 / (per_row * 2.3), 300 / (rows * 2.4)) * K
+    r = min(70 * min(items.get("scale", 1), 2.2), 700 / (per_row * 2.3), 300 / (rows * 2.4)) * K
     step = r * 2.3
     for i, g in enumerate(order):
         row, col = divmod(i, per_row)
         n_in_row = min(per_row, len(order) - row * per_row)
         x = w * K / 2 + (col - (n_in_row - 1) / 2) * step
         y = h * 0.50 * K + (row - (rows - 1) / 2) * r * 2.4
-        draw_item(d, items["type"], x, y, r, group=g, t=0.4, phase=i * 0.7)  # no grey ghosts here
+        kind = items["types"][g] if items.get("types") else items["type"]
+        draw_item(d, kind, x, y, r, group=g, t=0.4, phase=i * 0.7)  # no grey ghosts here
 
     stroked(d, w * 0.43 * K, 125 * K, HEADLINES.get(lesson.get("topic"), "LEARN WITH US!"), 135 * K,
             max_width=w * 0.72 * K)

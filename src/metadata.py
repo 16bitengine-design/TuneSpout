@@ -35,6 +35,12 @@ TOPIC_INFO = {
     "fairplay": {"skill": "playing fair, taking turns and cheering for friends", "ages": "ages 4 to 9",
                  "tags": ["fairplay", "teamwork", "kindness", "sportsforkids"],
                  "hooks": ["Fair play makes everyone smile!", "Take turns and cheer!"]},
+    "animalsounds": {"skill": "animal names and the sounds they make", "ages": "ages 2 to 6",
+                     "tags": ["animalsounds", "animalsforkids", "farmanimals", "learnanimals"],
+                     "hooks": ["What does the cow say? Sing along!", "Can you make the animal sounds?"]},
+    "babyanimals": {"skill": "the names of baby animals", "ages": "ages 3 to 7",
+                    "tags": ["babyanimals", "animalsforkids", "youngones", "learnanimals"],
+                    "hooks": ["Do you know what a baby cow is called?", "Meet the baby animals!"]},
 }
 COMMON_TAGS = ["kidslearning", "educationalvideos", "cartoonsforkids", "kidssongs", "learningforkids"]
 FALLBACK = {"skill": "learning something new", "ages": "ages 3 to 10",
