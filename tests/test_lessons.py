@@ -168,3 +168,18 @@ def test_later_episodes_are_scheduled_in_order_not_all_at_once():
     second = buffer_post.build_input("youtube", meta, "u", env, episode=1)
     assert first["mode"] == "shareNow" and "dueAt" not in first
     assert second["mode"] == "customScheduled" and second["dueAt"].endswith("Z")
+
+
+def test_long_lessons_are_safe_long_enough_and_fit_in_parts():
+    import episodes
+    from generators import estimate_seconds, generate_long
+    from safety import check_lesson
+    for topic in ("addition", "plurals", "sports"):
+        lesson = generate_long(topic, 7, 8)
+        check_lesson(lesson)
+        secs = estimate_seconds(lesson["scenes"])
+        assert secs >= 8 * 60
+        assert lesson["scenes"][-1]["line"] != lesson["scenes"][-2]["line"]
+        durs = [len(sc["line"].split()) / 2.2 + 0.6 for sc in lesson["scenes"]]
+        parts = episodes.split(durs)
+        assert len(parts) >= 3 and all(sum(durs[a:b]) <= 180 for a, b in parts)
