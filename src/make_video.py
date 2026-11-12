@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
+import episodes
 import music
 import render
 import tts
@@ -34,28 +35,9 @@ def make_vertical(src, dst):
                     "-c:a", "copy", str(dst)], check=True)
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("lesson")
-    ap.add_argument("--out", default="out")
-    ap.add_argument("--fake-tts", action="store_true")
-    args = ap.parse_args()
-
-    lesson = json.loads(Path(args.lesson).read_text())
-    check_lesson(lesson)  # raises if anything is not kid-safe
-    out = Path(args.out)
+def render_episode(lesson, clips, durations, out):
+    """Mix the audio, draw the frames and write one episode's files into out/."""
     out.mkdir(parents=True, exist_ok=True)
-
-    # 1) voice for each scene; scene length = length of its audio
-    clips, durations = [], []
-    for sc in lesson["scenes"]:
-        a = tts.speak(sc["line"], lesson.get("voice", "af_heart"),
-                      lesson.get("speed", 0.9), lesson.get("pitch", 1.2),
-                      fake=args.fake_tts)
-        a = np.concatenate([a, np.zeros(int(PAUSE * SR), dtype=np.float32)])
-        clips.append(a)
-        durations.append(len(a) / SR)
-
     voice = np.concatenate(clips)
     seconds = len(voice) / SR
     tune = lesson.get("tune")
@@ -64,7 +46,6 @@ def main():
     wav = out / "audio.wav"
     sf.write(wav, mix, SR)
 
-    # 2) frames piped straight into ffmpeg
     mp4 = out / "video.mp4"
     cmd = [
         "ffmpeg", "-y", "-loglevel", "error",
@@ -82,7 +63,7 @@ def main():
     if proc.wait() != 0:
         raise SystemExit("ffmpeg failed")
 
-    # 3) automatic titles, descriptions and hashtags, plus the vertical TikTok version
+    # automatic titles, descriptions and hashtags, plus the vertical TikTok version
     write_metadata(lesson, out)
     try:
         branding.thumbnail(lesson).save(out / "thumbnail.png", optimize=True)
@@ -90,6 +71,42 @@ def main():
         print("No kids in this lesson, so no thumbnail was made.")
     make_vertical(mp4, out / "video_vertical.mp4")
     print(f"Done: {mp4} and video_vertical.mp4 ({sum(durations):.1f}s)")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("lesson")
+    ap.add_argument("--out", default="out")
+    ap.add_argument("--fake-tts", action="store_true")
+    args = ap.parse_args()
+
+    lesson = json.loads(Path(args.lesson).read_text())
+    check_lesson(lesson)  # raises if anything is not kid-safe
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+
+    # voice for each scene; scene length = length of its audio
+    clips, durations = [], []
+    for sc in lesson["scenes"]:
+        a = tts.speak(sc["line"], lesson.get("voice", "af_heart"),
+                      lesson.get("speed", 0.9), lesson.get("pitch", 1.2),
+                      fake=args.fake_tts)
+        a = np.concatenate([a, np.zeros(int(PAUSE * SR), dtype=np.float32)])
+        clips.append(a)
+        durations.append(len(a) / SR)
+
+    # one video, or (over three minutes) episodes of about two minutes each
+    ranges = episodes.split(durations)
+    folders = []
+    for number, (first, last) in enumerate(ranges, 1):
+        part = {**lesson, "scenes": lesson["scenes"][first:last],
+                "title": episodes.episode_title(lesson["title"], number, len(ranges))}
+        folder = out if len(ranges) == 1 else out / f"ep{number}"
+        render_episode(part, clips[first:last], durations[first:last], folder)
+        folders.append(str(folder.relative_to(out)) if folder != out else ".")
+    (out / "episodes.json").write_text(json.dumps(folders))
+    if len(ranges) > 1:
+        print(f"Split into {len(ranges)} episodes.")
 
 
 if __name__ == "__main__":

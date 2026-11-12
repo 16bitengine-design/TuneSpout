@@ -140,3 +140,25 @@ def test_brand_images_and_thumbnails(tmp_path):
 def test_tunes_have_right_length():
     for name in music.TUNES:
         assert len(music.tune_track(name, 3.0)) == 3 * music.SR
+
+
+def test_long_lessons_split_into_two_minute_episodes_at_scene_boundaries():
+    import episodes
+    assert episodes.split([10.0] * 17) == [(0, 17)]                  # 170 s: stays one video
+    assert episodes.split([10.0] * 25) == [(0, 12), (12, 25)]        # a short tail folds into the last episode
+    assert episodes.split([10.0] * 60) == [(i * 12, i * 12 + 12) for i in range(5)]
+    ranges = episodes.split([7.0] * 80)
+    assert ranges[0][0] == 0 and ranges[-1][1] == 80
+    assert all(prev[1] == nxt[0] for prev, nxt in zip(ranges, ranges[1:])), "no scene lost or repeated"
+    assert episodes.episode_title("Add!", 2, 3) == "Add! (Part 2 of 3)"
+    assert episodes.episode_title("Add!", 1, 1) == "Add!"
+
+
+def test_later_episodes_are_scheduled_in_order_not_all_at_once():
+    import buffer_post
+    env = {"BUFFER_YOUTUBE_CHANNEL_ID": "c"}
+    meta = {"title": "T", "description": "d"}
+    first = buffer_post.build_input("youtube", meta, "u", env, episode=0)
+    second = buffer_post.build_input("youtube", meta, "u", env, episode=1)
+    assert first["mode"] == "shareNow" and "dueAt" not in first
+    assert second["mode"] == "customScheduled" and second["dueAt"].endswith("Z")

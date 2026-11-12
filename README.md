@@ -38,6 +38,9 @@ Posting goes through **Buffer**, so you never deal with YouTube or TikTok develo
 
 Buffer's free plan allows 3,000 API requests per 30 days, far more than one post a day needs. Buffer cannot set a custom YouTube thumbnail; the generated thumbnail is still saved in each run's downloadable files.
 
+## Episodes
+A lesson up to 3 minutes is one video. A longer one is cut at scene boundaries into episodes of about 2 minutes (a short last piece is joined to the one before), titled "... (Part 1 of 3)". Each episode has its own video, vertical video, description and hashtags. Today's lessons are 20-55 seconds, so this only starts to matter when longer lessons are added. The first episode is sent to Buffer right away and the rest are scheduled one hour apart, in order. If a post fails part-way through a multi-episode day, the retry sends the whole set again, so check for a duplicate part.
+
 ## Descriptions and hashtags
 `src/metadata.py` writes them from the lesson itself (topic, kids' names, age range), so nobody types captions. YouTube gets a full description with 8 hashtags and search tags. TikTok gets a short caption with 5 hashtags. Edit the topic tables in that file to change the wording. Tests check the length limits and that generated text avoids unsafe words.
 
