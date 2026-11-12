@@ -115,7 +115,7 @@ def test_lessons_with_pals_keep_kids_as_stars():
         for seed in range(40):
             lesson = generate(topic, seed)
             for sc in lesson["scenes"]:
-                assert len(sc.get("pals", [])) <= 1
+                assert len(sc.get("pals", [])) <= 2
                 if sc.get("pals"):
                     assert len(sc["kids"]) >= 1  # a pal never appears without a kid
 
@@ -168,6 +168,35 @@ def test_later_episodes_are_scheduled_in_order_not_all_at_once():
     second = buffer_post.build_input("youtube", meta, "u", env, episode=1)
     assert first["mode"] == "shareNow" and "dueAt" not in first
     assert second["mode"] == "customScheduled" and second["dueAt"].endswith("Z")
+
+
+def test_cast_is_the_same_every_video_and_extras_change():
+    from characters.cast import CAST_ANIMALS, CAST_KIDS, check_cast
+    from generators import GENERATORS, generate
+    assert check_cast()
+    cast_names = {k["name"] for k in CAST_KIDS}
+    looks = {k["name"]: k for k in CAST_KIDS}
+    extras_seen = set()
+    for topic in GENERATORS:
+        for seed in (1, 2, 3):
+            lesson = generate(topic, seed)
+            for sc in lesson["scenes"]:
+                for kid in sc.get("kids", []):
+                    assert kid["name"] in cast_names and kid == looks[kid["name"]], "a main kid changed looks"
+            with_kids = [sc for sc in lesson["scenes"] if "kids" in sc]
+            assert with_kids and all([p["cast"] for p in sc["pals"]] == list(CAST_ANIMALS) for sc in with_kids)
+            extras_seen.add(str(with_kids[0]["extras"]))
+    assert len(extras_seen) > 5, "extras should differ from video to video"
+
+
+def test_each_topic_picks_its_own_length_inside_its_range():
+    from generators import MAX_MINUTES, MIN_MINUTES, TOPIC_MINUTES, TOPICS, target_minutes
+    assert set(TOPIC_MINUTES) == set(TOPICS)
+    for topic, (low, high) in TOPIC_MINUTES.items():
+        assert MIN_MINUTES <= low <= high <= MAX_MINUTES
+        picks = {target_minutes(topic, seed) for seed in range(60)}
+        assert all(low <= m <= high for m in picks)
+    assert target_minutes("division", 5) == target_minutes("division", 5)  # repeatable
 
 
 def test_long_lessons_are_safe_long_enough_and_fit_in_parts():

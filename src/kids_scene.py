@@ -4,13 +4,16 @@ Scene keys (all optional except line):
   kids:     list of kid dicts (max 2 looks best)
   items:    {type, count, split:[group sizes], new_from, ghost}
   equation: big text banner, e.g. "2 + 3 = 5"
+  pals:     animal friends: {"cast": "pip"} for a cast animal, or {"seed": n} for an invented one
+  extras:   small background kids (no names), drawn behind the main kids
   cheer:    true to make the kids jump for joy
   line:     the sentence spoken and shown on screen
 """
 from PIL import Image, ImageDraw
 
 import render
-from characters.creatures import draw_creature, genome
+from characters.cast import pal_genome
+from characters.creatures import draw_creature
 from characters.items import draw_item
 from characters.kids import draw_kid
 
@@ -33,6 +36,11 @@ def draw_kids_scene(scene, t, size=(render.W, render.H)):
     d = ImageDraw.Draw(img)
     render.background(d, w, h, t, pond=False)
 
+    # extras stand far back and small, so the main players stay the stars
+    for i, kid in enumerate(scene.get("extras", [])):
+        draw_kid(d, w * (0.40 + 0.20 * i), h * 0.73, SS * 0.62, t, phase=i * 2.1 + 0.7,
+                 cheer=bool(scene.get("cheer")), **_clean_kid(kid))
+
     # kids stand at the sides so the middle stays free for the things they use
     kids = scene.get("kids", [])
     xs = KID_X.get(len(kids), [(i + 1) / (len(kids) + 1) for i in range(len(kids))])
@@ -41,9 +49,10 @@ def draw_kids_scene(scene, t, size=(render.W, render.H)):
                  cheer=bool(scene.get("cheer")), **_clean_kid(kid))
 
     # an invented sidekick stands between a kid and the middle of the scene
-    for i, pal in enumerate(scene.get("pals", [])):
-        fx = 0.30 + 0.40 * i if len(kids) != 1 else 0.28
-        draw_creature(d, w * fx, h * 0.74, SS * 1.0, t, i * 0.8, genome(pal["seed"]))
+    pals = scene.get("pals", [])
+    pal_x = [0.28, 0.86] if len(kids) == 1 else [0.30, 0.70]
+    for i, pal in enumerate(pals):
+        draw_creature(d, w * (pal_x[i] if i < 2 else 0.5), h * 0.74, SS * 1.0, t, i * 0.8, pal_genome(pal))
 
     items = scene.get("items")
     if items:

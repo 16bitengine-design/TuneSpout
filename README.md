@@ -39,7 +39,7 @@ Posting goes through **Buffer**, so you never deal with YouTube or TikTok develo
 Buffer's free plan allows 3,000 API requests per 30 days, far more than one post a day needs. Buffer cannot set a custom YouTube thumbnail; the generated thumbnail is still saved in each run's downloadable files.
 
 ## Episodes
-No video is longer than **3 minutes**. A lesson up to 3 minutes is one video. A longer one is cut between scenes into the fewest parts that fit, as equal in length as possible (a 7-minute lesson becomes three parts of about 2:20), titled "... (Part 1 of 3)". Each part has its own video, vertical video, description and hashtags. Lessons are 20-55 seconds by default. For longer ones, run the workflow by hand with `minutes` (say 8), or set the repo variable `LESSON_MINUTES` to make every daily lesson that long. A long lesson is the same topic with new friends and new examples, one segment after another. The first part is sent to Buffer right away and the rest are scheduled one hour apart, in order. If a post fails part-way through a multi-part day, the retry sends the whole set again, so check for a duplicate part.
+No video is longer than **3 minutes**. A lesson up to 3 minutes is one video. A longer one is cut between scenes into the fewest parts that fit, as equal in length as possible (a 7-minute lesson becomes three parts of about 2:20), titled "... (Part 1 of 3)". Each part has its own video, vertical video, description and hashtags. Each topic has its own length range (counting 1-2 minutes, division 3-6) in `TOPIC_MINUTES` in `src/generators/__init__.py`, and each day picks a length inside it. To force a length, run the workflow by hand with `minutes`, or set the repo variable `LESSON_MINUTES`. A long lesson is the same topic with new friends and new examples, one segment after another. The first part is sent to Buffer right away and the rest are scheduled one hour apart, in order. If a post fails part-way through a multi-part day, the retry sends the whole set again, so check for a duplicate part.
 
 ## Descriptions and hashtags
 `src/metadata.py` writes them from the lesson itself (topic, kids' names, age range), so nobody types captions. YouTube gets a full description with 8 hashtags and search tags. TikTok gets a short caption with 5 hashtags. Edit the topic tables in that file to change the wording. Tests check the length limits and that generated text avoids unsafe words.
@@ -58,6 +58,9 @@ The system makes its own visuals for each video, with no drawings to store:
 - **Kids:** every lesson picks kids with different skin tones, hair and clothes.
 - **Safety:** designs are round and gentle, and invented names are checked against the blocked words, including inside longer names.
 To add a new object, add one entry to `LIBRARY` (see the shape format at the top of `src/characters/shapes.py`).
+
+## The cast
+Four main kids (Amina, Leo, Mei, Kofi) and two animal friends (Pip and Mo) appear in every video, always looking the same. Two to three kids from the cast lead each lesson. Two small background kids with random looks stand behind them: these are extras, made fresh for each video. To change the cast, edit `src/characters/cast.py`. `branding/cast.png` is a picture of everyone for channel art.
 
 ## Branding
 The channel brand (name **TuneSpout**, mascot Spout, colors, Fredoka font, bios) is in `branding/BRAND.md`. Ready-to-upload images are in `branding/`: profile picture (YouTube and TikTok), YouTube banner and watermark, and a TikTok cover. Regenerate them with `python tools/make_brand_assets.py`. Every video also gets its own thumbnail (`out/thumbnail.png`, 1280x720), built from the lesson's kids and objects and set on YouTube after upload.

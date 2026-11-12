@@ -16,9 +16,9 @@ on:
         default: auto
         options: [auto, counting, addition, subtraction, multiplication, division, plurals, sports, teamscore, fairplay]
       minutes:
-        description: "Lesson length in minutes (0 = short lesson). Over 3 minutes is cut into parts."
-        type: number
-        default: 0
+        description: "Lesson length in minutes, or auto (each topic has its own range). Over 3 minutes is cut into parts."
+        type: string
+        default: auto
       force:
         description: "Post again even if today's video was already posted"
         type: boolean
@@ -45,7 +45,7 @@ jobs:
       CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
       CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
       TOPIC: ${{ inputs.topic || 'auto' }}
-      MINUTES: ${{ inputs.minutes || vars.LESSON_MINUTES || '0' }}   # repo variable LESSON_MINUTES sets the daily length
+      MINUTES: ${{ inputs.minutes || vars.LESSON_MINUTES || 'auto' }}   # auto = by topic; the repo variable LESSON_MINUTES can force one length
     steps:
       - uses: actions/checkout@v4
       - name: Check out the daily record

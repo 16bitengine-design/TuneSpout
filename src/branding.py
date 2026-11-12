@@ -12,6 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 import render
 from characters.common import ellipse
+from characters.cast import CAST_ANIMALS, CAST_KIDS, pal_genome
 from characters.creatures import draw_creature, genome
 from characters.kids import HAIR, PANTS, SHIRTS, SKIN, draw_kid
 
@@ -140,12 +141,8 @@ def _finish(img, w, h, rgb=True):
     return out.convert("RGB") if rgb else out
 
 
-BRAND_KIDS = [
-    dict(skin=SKIN[4], hair=HAIR[0], style="bun", shirt=SHIRTS[0], pants=PANTS[0]),
-    dict(skin=SKIN[1], hair=HAIR[3], style="short", shirt=SHIRTS[1], pants=PANTS[1]),
-    dict(skin=SKIN[3], hair=HAIR[4], style="curly", shirt=SHIRTS[2], pants=PANTS[2]),  # orange: shows on green hills
-    dict(skin=SKIN[0], hair=HAIR[2], style="long", shirt=SHIRTS[4], pants=PANTS[0]),
-]
+# the channel art shows the real cast (order: Amina, Leo, Kofi on the hills, Mei)
+BRAND_KIDS = [{k: v for k, v in CAST_KIDS[i].items() if k != "name"} for i in (0, 1, 3, 2)]
 
 
 def _sparkle_notes(d, spots):
@@ -187,8 +184,8 @@ def banner(w=2560, h=1440):
     # characters stand outside the safe area, on the hills
     for x, kid, ph in ((210, BRAND_KIDS[0], 0.0), (2350, BRAND_KIDS[1], 1.0)):
         draw_kid(d, x * K, 1335 * K, 2.2 * K, 0.5, ph, cheer=True, **kid)
-    for x, seed in ((480, 11), (2080, 23)):
-        draw_creature(d, x * K, 1340 * K, 2.4 * K, 0.5, x, genome(seed))
+    for x, key in ((480, "pip"), (2080, "mo")):
+        draw_creature(d, x * K, 1340 * K, 2.4 * K, 0.5, x, pal_genome({"cast": key}))
     # centre: mascot on a cloud, name and tagline (all inside the safe area)
     for dx, rx, ry in ((-95, 95, 34), (0, 130, 44), (100, 100, 34)):
         ellipse(d, (800 + dx) * K, 925 * K, rx * K, ry * K, WHITE)
@@ -210,6 +207,22 @@ def tiktok_cover(w=1080, h=1920):
     return _finish(img, w, h)
 
 
+def cast_sheet(w=1920, h=1080):
+    """'Meet the friends': the four main kids and two animal pals, with their names."""
+    img, d = _canvas(w, h)
+    stroked(d, w / 2 * K, 150 * K, "Meet the friends!", 120 * K, max_width=w * 0.8 * K)
+    xs = [0.09 + 0.15 * i for i in range(6)]
+    for fx, kid in zip(xs, CAST_KIDS):
+        draw_kid(d, fx * w * K, 800 * K, 2.6 * K, 0.5, fx * 9, cheer=False,
+                 **{k: v for k, v in kid.items() if k != "name"})
+        pill(d, fx * w * K, 900 * K, kid["name"], 54 * K)
+    for fx, (key, animal) in zip(xs[4:], CAST_ANIMALS.items()):
+        draw_creature(d, fx * w * K, 790 * K, 3.0 * K, 0.5, fx * 9, pal_genome({"cast": key}))
+        pill(d, fx * w * K, 900 * K, animal["name"], 54 * K)
+    pill(d, w / 2 * K, 1000 * K, "TuneSpout", 44 * K)
+    return _finish(img, w, h)
+
+
 HEADLINES = {
     "counting": "COUNT WITH US!", "addition": "LET'S ADD!", "subtraction": "TAKE AWAY!",
     "multiplication": "TIMES TABLES!", "division": "SHARE FAIRLY!", "plurals": "ONE & MANY!",
@@ -225,7 +238,7 @@ def thumbnail(lesson, w=1280, h=720):
 
     scenes = lesson["scenes"]
     kids = next(sc["kids"] for sc in scenes if sc.get("kids"))
-    pal = next((sc["pals"][0] for sc in scenes if sc.get("pals")), None)
+    pals = next((sc["pals"] for sc in scenes if sc.get("pals")), [])
     with_items = [sc for sc in scenes if sc.get("items")]
     items = (with_items[-1]["items"] if with_items else {"type": "ball", "count": 3})
 
@@ -233,8 +246,8 @@ def thumbnail(lesson, w=1280, h=720):
     # kids on the hills, cheering
     for x, kid, ph in ((0.10, kids[0], 0.0), (0.90, kids[-1], 1.0)):
         draw_kid(d, x * w * K, 708 * K, 2.1 * K, 0.5, ph, cheer=True, **_clean_kid(kid))
-    if pal:
-        draw_creature(d, 0.28 * w * K, 712 * K, 2.0 * K, 0.4, 0.0, genome(pal["seed"]))
+    for pal, fx in zip(pals, (0.28, 0.72)):
+        draw_creature(d, fx * w * K, 712 * K, 2.0 * K, 0.4, 0.0, pal_genome(pal))
 
     # the things from the lesson, as large as the space allows
     groups = items.get("split") or [items["count"]]
@@ -271,6 +284,7 @@ def write_all(out_dir):
         "youtube_banner_2560x1440.png": banner(),
         "youtube_watermark_150.png": watermark(150),
         "tiktok_cover_1080x1920.png": tiktok_cover(),
+        "cast.png": cast_sheet(),
     }
     for name, img in files.items():
         img.save(out / name, optimize=True)

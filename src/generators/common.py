@@ -2,11 +2,8 @@
 so the same seed always gives the same lesson and nothing needs to be stored."""
 import random
 
-from characters.creatures import new_pal
-from characters.kids import HAIR, PANTS, SHIRTS, SKIN, STYLES
+from characters.cast import cast_pals, extra_kids, pick_kids
 
-NAMES = ["Amina", "Leo", "Zuri", "Mateo", "Mei", "Sam", "Ravi", "Lila", "Kofi",
-         "Nia", "Omar", "Ella", "Tariq", "Ana", "Jin", "Sara"]
 # Things kids can count. Only words with a regular plural (add an s) belong here;
 # any word works for drawing, because unknown words get an invented object.
 _THINGS = ["apple", "star", "ball", "flower", "kite", "balloon", "cup", "book", "cookie",
@@ -32,30 +29,21 @@ def noun(item: str, n: int) -> str:
 
 
 def make_kids(rng: random.Random, k: int) -> list:
-    """k different kids with varied skin, hair and clothes."""
-    kids = []
-    for name in rng.sample(NAMES, k):
-        kids.append({
-            "name": name,
-            "skin": list(rng.choice(SKIN)),
-            "hair": list(rng.choice(HAIR)),
-            "style": rng.choice(STYLES),
-            "shirt": list(rng.choice(SHIRTS)),
-            "pants": list(rng.choice(PANTS)),
-        })
-    return kids
+    """k of the recurring main kids (see characters/cast.py)."""
+    return pick_kids(rng, k)
 
 
 def lesson(rng, title, description, tags, scenes):
     tune = rng.choice(TUNES)
-    # Often add an invented sidekick. Kids stay the main characters: the pal is
-    # small, stands beside them, and has no lines of its own.
-    if scenes and "kids" in scenes[0] and rng.random() < 0.6:
-        pal = new_pal(rng)
+    # The two cast animals join every lesson beside the kids. Two replaceable extras
+    # (random background kids) stand behind, so each video looks a little different.
+    if scenes and "kids" in scenes[0]:
+        pals, extras = cast_pals(), extra_kids(rng, 2)
         for sc in scenes:
-            sc["pals"] = [pal]
-        scenes.insert(1, {"kids": scenes[0]["kids"], "pals": [pal], "cheer": True,
-                          "line": f"And this is our new friend {pal['name']}!"})
+            sc["pals"] = pals
+            sc["extras"] = extras
+        scenes.insert(1, {"kids": scenes[0]["kids"], "pals": pals, "extras": extras, "cheer": True,
+                          "line": f"Look! {pals[0]['name']} and {pals[1]['name']} came to play too!"})
     return {
         "title": title,
         "description": description,
