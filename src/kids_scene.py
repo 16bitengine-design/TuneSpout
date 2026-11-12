@@ -5,7 +5,7 @@ Scene keys (all optional except line):
   items:    {type, count, split:[group sizes], new_from, ghost, scale, types}
             scale makes each thing bigger (1 = counting size); types gives one thing per group
   equation: big text banner, e.g. "2 + 3 = 5"
-  pals:     animal friends: {"cast": "pip"} for a cast animal, or {"seed": n} for an invented one
+  pals:     animal friends: {"cast": "kibo"} for a cast animal, or {"seed": n} for an invented one
   extras:   small background kids (no names), drawn behind the main kids
   cheer:    true to make the kids jump for joy
   line:     the sentence spoken and shown on screen

@@ -184,7 +184,7 @@ def banner(w=2560, h=1440):
     # characters stand outside the safe area, on the hills
     for x, kid, ph in ((210, BRAND_KIDS[0], 0.0), (2350, BRAND_KIDS[1], 1.0)):
         draw_kid(d, x * K, 1335 * K, 2.2 * K, 0.5, ph, cheer=True, **kid)
-    for x, key in ((480, "pip"), (2080, "mo")):
+    for x, key in ((480, "kibo"), (2080, "mo")):
         draw_creature(d, x * K, 1340 * K, 2.4 * K, 0.5, x, pal_genome({"cast": key}))
     # centre: mascot on a cloud, name and tagline (all inside the safe area)
     for dx, rx, ry in ((-95, 95, 34), (0, 130, 44), (100, 100, 34)):

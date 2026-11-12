@@ -18,7 +18,7 @@ CAST_KIDS = [
 
 # Two friendly animal pals who join every lesson.
 CAST_ANIMALS = {
-    "pip": {"name": "Pip", "body": (255, 225, 130), "ears": "round", "tail": "puff",
+    "kibo": {"name": "Kibo", "body": (255, 225, 130), "ears": "round", "tail": "puff",
             "pattern": "spots", "scale": 1.0, "tall": 1.0},
     "mo": {"name": "Mo", "body": (170, 210, 255), "ears": "floppy", "tail": "curl",
            "pattern": "none", "scale": 1.05, "tall": 1.1},

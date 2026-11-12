@@ -63,7 +63,7 @@ To add a new object, add one entry to `LIBRARY` (see the shape format at the top
 `animalsounds` (what the cow says) and `babyanimals` (a baby cow is a calf) use nine drawn farm animals: dog, cat, cow, duck, sheep, pig, chicken, horse and frog. Add more in `src/characters/animals.py` with their sound and baby name.
 
 ## The cast
-Four main kids (Amina, Leo, Mei, Kofi) and two animal friends (Pip and Mo) appear in every video, always looking the same. Two to three kids from the cast lead each lesson. Two small background kids with random looks stand behind them: these are extras, made fresh for each video. To change the cast, edit `src/characters/cast.py`. `branding/cast.png` is a picture of everyone for channel art.
+Four main kids (Amina, Leo, Mei, Kofi) and two animal friends (Kibo and Mo) appear in every video, always looking the same. Two to three kids from the cast lead each lesson. Two small background kids with random looks stand behind them: these are extras, made fresh for each video. To change the cast, edit `src/characters/cast.py`. `branding/cast.png` is a picture of everyone for channel art.
 
 ## Branding
 The channel brand (name **TuneSpout**, mascot Spout, colors, Fredoka font, bios) is in `branding/BRAND.md`. Ready-to-upload images are in `branding/`: profile picture (YouTube and TikTok), YouTube banner and watermark, and a TikTok cover. Regenerate them with `python tools/make_brand_assets.py`. Every video also gets its own thumbnail (`out/thumbnail.png`, 1280x720), built from the lesson's kids and objects and set on YouTube after upload.
