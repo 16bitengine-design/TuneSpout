@@ -2,7 +2,4 @@ pillow
 numpy
 soundfile
 kokoro>=0.9
-google-api-python-client
-google-auth
 requests
-cryptography

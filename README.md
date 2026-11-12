@@ -23,20 +23,20 @@ python -m pytest tests                 # checks safety, math and drawing
 Result in `out/`: `video.mp4` (YouTube), `thumbnail.png`, `video_vertical.mp4` (TikTok), `meta.json` (YouTube title, description, tags) and `tiktok.json` (caption with hashtags).
 
 ## Put it on GitHub and automate it
-Add each platform's secrets under Repo Settings -> Secrets and variables -> Actions. A platform with no secrets is skipped, so you can start with one.
+Posting goes through **Buffer**, so you never deal with YouTube or TikTok developer approval. Add these under Repo Settings -> Secrets and variables -> Actions. With none of them set, a run just builds the video (a practice run).
 
-**YouTube**
-1. Create the channel. In Google Cloud Console enable **YouTube Data API v3** and create an OAuth client of type Desktop app.
-2. On your own computer run `python tools/get_youtube_token.py client_secret.json` (needs `pip install google-auth-oauthlib`). It prints the three values.
-3. Add secrets `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN`.
+**Buffer**
+1. In Buffer, connect your YouTube channel and your TikTok account.
+2. Create an API key (Buffer account settings, API) and add it as secret `BUFFER_API_KEY`.
+3. Run `BUFFER_API_KEY=... python tools/list_buffer_channels.py`. It prints each channel's id. Add the YouTube one as `BUFFER_YOUTUBE_CHANNEL_ID` and the TikTok one as `BUFFER_TIKTOK_CHANNEL_ID`. A platform whose id is missing is skipped.
+4. If a channel is set to "Requires Approval" in Buffer, posts arrive as drafts for you to approve.
 
-**TikTok**
-1. Create an app at developers.tiktok.com, add the **Content Posting API** product with the `video.publish` scope, and register a redirect URI.
-2. On your own computer run `python tools/get_tiktok_token.py` and follow the prompts. This helper is untested against TikTok, so check it against their current docs.
-3. Add secrets `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`, `TIKTOK_REFRESH_TOKEN`.
-4. Until TikTok audits your app, every post is forced to private (`SELF_ONLY`). Apply for the audit early.
+**Cloudinary** (Buffer only accepts a public link to a video, so each video is put here first; it is deleted after 7 days)
+1. Make a free account. Add secrets `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
 
-`.github/workflows/daily.yml` runs every day and posts as **private** on both. Watch the videos, then switch `PRIVACY` (YouTube) and `TIKTOK_PRIVACY` (TikTok) to public once you trust the output. You can also run it by hand from the Actions tab and choose a topic. Each run keeps its videos as a downloadable artifact for 7 days.
+**Going live.** Safe defaults: YouTube posts as **private**; TikTok waits as a **draft** in Buffer. Watch a few, then set repo variables `YT_PRIVACY=public` and `TIKTOK_MODE=post`.
+
+Buffer's free plan allows 3,000 API requests per 30 days, far more than one post a day needs. Buffer cannot set a custom YouTube thumbnail; the generated thumbnail is still saved in each run's downloadable files.
 
 ## Descriptions and hashtags
 `src/metadata.py` writes them from the lesson itself (topic, kids' names, age range), so nobody types captions. YouTube gets a full description with 8 hashtags and search tags. TikTok gets a short caption with 5 hashtags. Edit the topic tables in that file to change the wording. Tests check the length limits and that generated text avoids unsafe words.
@@ -73,25 +73,11 @@ Tunes are public-domain melodies (Twinkle Twinkle, Mary Had a Little Lamb, Row R
 - **Run it by hand**: Actions tab > "Make and post a lesson video" > Run workflow. Pick a topic, or tick "force" to post again.
 - Runs only from the default branch (`main`).
 
-Settings (repo Settings > Secrets and variables > Actions):
-
-| Secrets | What |
-|---|---|
-| `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` | YouTube (from `tools/get_youtube_token.py`) |
-| `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`, `TIKTOK_REFRESH_TOKEN` | TikTok (from `tools/get_tiktok_token.py`) |
-| `STATE_KEY` | any long random text; encrypts TikTok's rotating token in the state branch |
-
-| Variables | What |
-|---|---|
-| `YT_PRIVACY` | `private` by default. Set to `public` to go live. |
-| `TIKTOK_PRIVACY` | `SELF_ONLY` by default. `PUBLIC_TO_EVERYONE` works only after TikTok approves your app. |
-
-A platform with no secrets is skipped; with none at all, a run is a practice run that only builds the video.
-Google OAuth consent screen must be **In production**, or the YouTube token dies after 7 days.
+Settings are listed in the Buffer and Cloudinary steps above. A platform with no channel id is skipped.
 
 ## Important notes
 - **Kid voice:** Kokoro has no child voices. We pitch up a bright voice. Never clone a real child's voice without written parental consent.
 - **Singing:** Kokoro speaks; it does not sing. Lessons are spoken over the tune. For true singing, add a licensed singing tool later.
-- **Made for kids:** every YouTube upload sets `selfDeclaredMadeForKids`. This turns off comments and personalized ads, which is expected for kids channels (COPPA). TikTok posts turn off comments, duets and stitches, and are labelled as AI-generated.
-- **YouTube API:** new API projects often upload as locked-private until Google audits them. Request the audit early, or upload by hand until approved.
+- **Made for kids:** every YouTube post is marked made for kids, which turns off comments and personalized ads (COPPA). Both platforms get the AI-generated label. Buffer does not let us set TikTok's comment, duet and stitch switches, so turn those off in your TikTok account settings.
+- **Buffer:** posting is only as reliable as Buffer's connection to your accounts. If a channel disconnects, reconnect it in Buffer; the daily run will open a "Daily post failed" issue meanwhile.
 - **Style:** simple 2D vector style. Disney-quality 3D cannot be made by free code.

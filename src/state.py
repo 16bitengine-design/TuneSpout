@@ -46,9 +46,11 @@ def save(data):
 def connected():
     """Platforms whose secrets are set."""
     names = []
-    if os.environ.get("YT_REFRESH_TOKEN"):
+    if not os.environ.get("BUFFER_API_KEY"):
+        return names
+    if os.environ.get("BUFFER_YOUTUBE_CHANNEL_ID"):
         names.append("youtube")
-    if os.environ.get("TIKTOK_REFRESH_TOKEN"):
+    if os.environ.get("BUFFER_TIKTOK_CHANNEL_ID"):
         names.append("tiktok")
     return names
 

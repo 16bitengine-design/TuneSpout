@@ -34,9 +34,12 @@ jobs:
     timeout-minutes: 60
     env:
       # a platform is skipped until its secrets are added
-      YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
-      TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
-      STATE_KEY: ${{ secrets.STATE_KEY }}
+      BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+      BUFFER_YOUTUBE_CHANNEL_ID: ${{ secrets.BUFFER_YOUTUBE_CHANNEL_ID }}
+      BUFFER_TIKTOK_CHANNEL_ID: ${{ secrets.BUFFER_TIKTOK_CHANNEL_ID }}
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
       TOPIC: ${{ inputs.topic || 'auto' }}
     steps:
       - uses: actions/checkout@v4
@@ -85,26 +88,22 @@ jobs:
           path: out/
           retention-days: 7
 
-      - name: Post to YouTube
+      - name: Post to YouTube (through Buffer)
         if: steps.status.outputs.youtube == 'todo'
         continue-on-error: true   # a YouTube problem must not stop TikTok
         env:
-          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
-          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           PRIVACY: ${{ vars.YT_PRIVACY || 'private' }}   # set the repo variable YT_PRIVACY to public to go live
-        run: python src/upload_youtube.py out
+        run: python src/buffer_post.py youtube out
       - name: Record YouTube
         if: steps.status.outputs.youtube == 'todo'
         run: python3 src/state.py record youtube out/result_youtube.json && tools/push_state.sh
 
-      - name: Post to TikTok
+      - name: Post to TikTok (through Buffer)
         if: steps.status.outputs.tiktok == 'todo'
         continue-on-error: true
         env:
-          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
-          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
-          TIKTOK_PRIVACY: ${{ vars.TIKTOK_PRIVACY || 'SELF_ONLY' }}   # TikTok forces private until your app is audited
-        run: python src/upload_tiktok.py out
+          TIKTOK_MODE: ${{ vars.TIKTOK_MODE || 'draft' }}   # draft = waits in Buffer for you; set to post to go live
+        run: python src/buffer_post.py tiktok out
       - name: Record TikTok
         if: steps.status.outputs.tiktok == 'todo'
         run: python3 src/state.py record tiktok out/result_tiktok.json && tools/push_state.sh

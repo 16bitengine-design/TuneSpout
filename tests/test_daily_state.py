@@ -9,7 +9,7 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-import secrets_store  # noqa: E402
+import buffer_post  # noqa: E402
 import state  # noqa: E402
 
 
@@ -18,10 +18,15 @@ def day(tmp_path, monkeypatch):
     monkeypatch.setenv("STATE_DIR", str(tmp_path / "state"))
     monkeypatch.setenv("DAY", "2026-11-12")
     monkeypatch.setenv("LESSON_FILE", str(tmp_path / "lesson.json"))
-    monkeypatch.delenv("YT_REFRESH_TOKEN", raising=False)
-    monkeypatch.delenv("TIKTOK_REFRESH_TOKEN", raising=False)
+    for k in ("BUFFER_API_KEY", "BUFFER_YOUTUBE_CHANNEL_ID", "BUFFER_TIKTOK_CHANNEL_ID"):
+        monkeypatch.delenv(k, raising=False)
     (tmp_path / "lesson.json").write_text(json.dumps({"title": "Add!", "topic": "addition"}))
     return tmp_path
+
+
+def _connect(monkeypatch, platform):
+    monkeypatch.setenv("BUFFER_API_KEY", "k")
+    monkeypatch.setenv(f"BUFFER_{platform.upper()}_CHANNEL_ID", "chan-" + platform)
 
 
 def _result(tmp_path, name):
@@ -37,8 +42,8 @@ def test_nothing_connected_is_a_practice_run(day):
 
 
 def test_first_run_posts_everything_then_backup_run_does_nothing(day, monkeypatch):
-    monkeypatch.setenv("YT_REFRESH_TOKEN", "x")
-    monkeypatch.setenv("TIKTOK_REFRESH_TOKEN", "y")
+    _connect(monkeypatch, "youtube")
+    _connect(monkeypatch, "tiktok")
     assert state.status()["pending"] == "true"
     assert state.missing() == ["youtube", "tiktok"]
     state.record("youtube", _result(day, "yt.json"))
@@ -49,8 +54,8 @@ def test_first_run_posts_everything_then_backup_run_does_nothing(day, monkeypatc
 
 
 def test_partial_failure_only_retries_the_missing_platform(day, monkeypatch):
-    monkeypatch.setenv("YT_REFRESH_TOKEN", "x")
-    monkeypatch.setenv("TIKTOK_REFRESH_TOKEN", "y")
+    _connect(monkeypatch, "youtube")
+    _connect(monkeypatch, "tiktok")
     state.status()
     state.record("youtube", _result(day, "yt.json"))  # TikTok failed
     assert state.main(["verify"]) == 1
@@ -59,20 +64,20 @@ def test_partial_failure_only_retries_the_missing_platform(day, monkeypatch):
 
 
 def test_force_posts_again(day, monkeypatch):
-    monkeypatch.setenv("YT_REFRESH_TOKEN", "x")
+    _connect(monkeypatch, "youtube")
     state.record("youtube", _result(day, "yt.json"))
     assert state.status()["youtube"] == "done"
     assert state.status(force=True)["youtube"] == "todo"
 
 
 def test_a_failed_upload_records_nothing(day, monkeypatch):
-    monkeypatch.setenv("YT_REFRESH_TOKEN", "x")
+    _connect(monkeypatch, "youtube")
     state.record("youtube", str(day / "does_not_exist.json"))
     assert state.missing() == ["youtube"]
 
 
 def test_record_keeps_the_lesson_title_and_old_days_are_pruned(day, monkeypatch):
-    monkeypatch.setenv("YT_REFRESH_TOKEN", "x")
+    _connect(monkeypatch, "youtube")
     state.save({"2020-01-01": {"youtube": {}}, "2026-11-10": {"youtube": {}}})
     state.record("youtube", _result(day, "yt.json"))
     data = state.load()
@@ -81,47 +86,51 @@ def test_record_keeps_the_lesson_title_and_old_days_are_pruned(day, monkeypatch)
 
 
 def test_status_leaves_a_heartbeat_so_github_keeps_the_schedule_on(day, monkeypatch):
-    monkeypatch.setenv("YT_REFRESH_TOKEN", "x")
+    _connect(monkeypatch, "youtube")
     state.status()
     assert state.load()["_last_run"] == "2026-11-12"
 
 
-def test_rotated_tiktok_token_is_encrypted_and_a_new_secret_wins(tmp_path):
-    f = tmp_path / "tiktok_token.enc"
-    secrets_store.save_token(f, "long random key", "rotated-token-123", "original-secret")
-    assert b"rotated-token-123" not in f.read_bytes()  # not readable in a public repo
-    assert secrets_store.load_token(f, "long random key", "original-secret") == "rotated-token-123"
-    assert secrets_store.load_token(f, "wrong key", "original-secret") is None
-    # you paste a fresh token into the secret later: the old saved one must be ignored
-    assert secrets_store.load_token(f, "long random key", "brand-new-secret") is None
-    assert secrets_store.load_token(tmp_path / "missing.enc", "k", "s") is None
+META = {"title": "Count to 10!", "description": "Sing along", "caption": "Count! #kids", "is_aigc": True}
 
 
-def test_tiktok_token_refresh_saves_rotation(tmp_path, monkeypatch):
-    import upload_tiktok
-    monkeypatch.setenv("STATE_DIR", str(tmp_path))
-    monkeypatch.setenv("STATE_KEY", "long random key")
-    monkeypatch.setenv("TIKTOK_REFRESH_TOKEN", "secret-v1")
-    monkeypatch.setenv("TIKTOK_CLIENT_KEY", "ck")
-    monkeypatch.setenv("TIKTOK_CLIENT_SECRET", "cs")
-    sent = []
+def test_youtube_post_is_made_for_kids_private_and_labelled_ai(monkeypatch):
+    env = {"BUFFER_YOUTUBE_CHANNEL_ID": "c1"}
+    body = buffer_post.build_input("youtube", META, "https://x/v.mp4", env)
+    yt = body["metadata"]["youtube"]
+    assert yt["madeForKids"] is True and yt["privacy"] == "private" and yt["isAiGenerated"] is True
+    assert yt["categoryId"] == "27" and body["channelId"] == "c1"
+    assert body["assets"] == [{"video": {"url": "https://x/v.mp4"}}]
+    assert buffer_post.build_input("youtube", META, "u", {**env, "PRIVACY": "public"})["metadata"]["youtube"]["privacy"] == "public"
+
+
+def test_tiktok_waits_as_a_draft_until_you_switch_it_on():
+    env = {"BUFFER_TIKTOK_CHANNEL_ID": "c2"}
+    body = buffer_post.build_input("tiktok", META, "u", env)
+    assert body["saveToDraft"] is True and body["metadata"]["tiktok"]["isAiGenerated"] is True
+    assert "saveToDraft" not in buffer_post.build_input("tiktok", META, "u", {**env, "TIKTOK_MODE": "post"})
+
+
+def test_buffer_errors_are_not_mistaken_for_success(monkeypatch):
+    monkeypatch.setenv("BUFFER_API_KEY", "k")
 
     class Reply:
-        def __init__(self, rt):
-            self.rt = rt
+        def __init__(self, data):
+            self.data = data
 
         def raise_for_status(self):
             pass
 
         def json(self):
-            return {"access_token": "at", "refresh_token": self.rt}
+            return self.data
 
-    replies = iter(["rotated-v2", "rotated-v3"])
-    monkeypatch.setattr(upload_tiktok.requests, "post",
-                        lambda url, data, timeout: sent.append(data["refresh_token"]) or Reply(next(replies)))
-    assert upload_tiktok.get_access_token() == "at"   # day 1 uses the secret
-    assert upload_tiktok.get_access_token() == "at"   # day 2 must use the rotated token
-    assert sent == ["secret-v1", "rotated-v2"]
+    monkeypatch.setattr(buffer_post.requests, "post",
+                        lambda *a, **k: Reply({"data": {"createPost": {"message": "No video"}}}))
+    with pytest.raises(SystemExit):
+        buffer_post.create_post({})
+    monkeypatch.setattr(buffer_post.requests, "post",
+                        lambda *a, **k: Reply({"data": {"createPost": {"post": {"id": "p9"}}}}))
+    assert buffer_post.create_post({}) == "p9"
 
 
 def test_workflow_has_backup_run_and_safety_settings():
@@ -169,8 +178,8 @@ def test_two_runs_finishing_together_both_get_saved(tmp_path, monkeypatch):
     run(git + ["commit", "-q", "-m", "init"], seed)
     run(["git", "push", "-q", "origin", "state"], seed)
 
-    env = {**__import__("os").environ, "DAY": "2026-11-12", "YT_REFRESH_TOKEN": "x",
-           "TIKTOK_REFRESH_TOKEN": "y", "LESSON_FILE": str(tmp_path / "none.json")}
+    env = {**__import__("os").environ, "DAY": "2026-11-12", "BUFFER_API_KEY": "k", "BUFFER_YOUTUBE_CHANNEL_ID": "a",
+           "BUFFER_TIKTOK_CHANNEL_ID": "b", "LESSON_FILE": str(tmp_path / "none.json")}
     runs = {}
     for name, platform in (("main", "youtube"), ("backup", "tiktok")):
         work = tmp_path / name
