@@ -6,6 +6,9 @@
 3. python tools/get_youtube_token.py client_secret.json
 Sign in with the channel's Google account. Copy the three values it prints
 into GitHub secrets YT_CLIENT_ID, YT_CLIENT_SECRET, YT_REFRESH_TOKEN.
+IMPORTANT: in Google Cloud > OAuth consent screen, set the publishing status to
+"In production". While it says "Testing", Google expires the token after 7 days
+and the daily posting silently stops. Check the token still works after 8 days.
 Run this on your own computer only; never commit client_secret.json.
 """
 import sys

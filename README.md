@@ -62,6 +62,33 @@ The channel brand (name **TuneSpout**, mascot Spout, colors, Fredoka font, bios)
 ## Songs
 Tunes are public-domain melodies (Twinkle Twinkle, Mary Had a Little Lamb, Row Row Row Your Boat) written as notes in `src/music.py` and played by code, so there are no recording rights to worry about. Add more by listing notes. Only add melodies that are clearly public domain.
 
+## Posting every day
+
+`.github/workflows/daily.yml` posts one video a day and is built to survive GitHub's hiccups:
+
+- **Two schedules**: a main run (06:17 UTC) and a backup run (12:43 UTC). GitHub sometimes delays or drops scheduled runs. The backup only does something if the main run was missed or only half worked.
+- **No double posting**: each day's result is saved in a `state` branch (`posted.json`). A rerun only posts to the platform that is still missing. If two runs finish at once, their records are merged.
+- **Keeps itself alive**: GitHub switches off schedules in public repos after 60 days without activity; the daily record commit counts as activity.
+- **Tells you when it fails**: a failed run opens a "Daily post failed" issue.
+- **Run it by hand**: Actions tab > "Make and post a lesson video" > Run workflow. Pick a topic, or tick "force" to post again.
+- Runs only from the default branch (`main`).
+
+Settings (repo Settings > Secrets and variables > Actions):
+
+| Secrets | What |
+|---|---|
+| `YT_CLIENT_ID`, `YT_CLIENT_SECRET`, `YT_REFRESH_TOKEN` | YouTube (from `tools/get_youtube_token.py`) |
+| `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`, `TIKTOK_REFRESH_TOKEN` | TikTok (from `tools/get_tiktok_token.py`) |
+| `STATE_KEY` | any long random text; encrypts TikTok's rotating token in the state branch |
+
+| Variables | What |
+|---|---|
+| `YT_PRIVACY` | `private` by default. Set to `public` to go live. |
+| `TIKTOK_PRIVACY` | `SELF_ONLY` by default. `PUBLIC_TO_EVERYONE` works only after TikTok approves your app. |
+
+A platform with no secrets is skipped; with none at all, a run is a practice run that only builds the video.
+Google OAuth consent screen must be **In production**, or the YouTube token dies after 7 days.
+
 ## Important notes
 - **Kid voice:** Kokoro has no child voices. We pitch up a bright voice. Never clone a real child's voice without written parental consent.
 - **Singing:** Kokoro speaks; it does not sing. Lessons are spoken over the tune. For true singing, add a licensed singing tool later.

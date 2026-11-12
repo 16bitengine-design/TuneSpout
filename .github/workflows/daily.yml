@@ -1,56 +1,131 @@
 name: Make and post a lesson video
 
+# Two runs a day. The first does the work. The backup only does something if the
+# first one was delayed, dropped or failed, because GitHub can skip scheduled
+# runs when it is busy. A record in the `state` branch stops any double posting.
+# Odd minutes avoid the top of the hour, when GitHub is busiest.
 on:
   schedule:
-    - cron: "0 6 * * *"   # every day at 06:00 UTC
-  workflow_dispatch:       # run by hand from the Actions tab
+    - cron: "17 6 * * *"    # main run (06:17 UTC)
+    - cron: "43 12 * * *"   # backup run
+  workflow_dispatch:
     inputs:
       topic:
-        description: "auto, counting, addition, subtraction, multiplication, division, plurals, sports, teamscore or fairplay"
-        default: "auto"
+        description: "Lesson topic (auto rotates through all of them)"
+        type: choice
+        default: auto
+        options: [auto, counting, addition, subtraction, multiplication, division, plurals, sports, teamscore, fairplay]
+      force:
+        description: "Post again even if today's video was already posted"
+        type: boolean
+        default: false
+
+concurrency:
+  group: daily-post
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # saves the daily record to the state branch
+  issues: write     # opens an issue if posting fails
 
 jobs:
-  build:
+  post:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       # a platform is skipped until its secrets are added
       YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
       TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
+      STATE_KEY: ${{ secrets.STATE_KEY }}
+      TOPIC: ${{ inputs.topic || 'auto' }}
     steps:
       - uses: actions/checkout@v4
+      - name: Check out the daily record
+        uses: actions/checkout@v4
+        with:
+          ref: state
+          path: state
+      - name: What is still to post today?
+        id: status
+        run: |
+          echo "DAY=$(date -u +%F)" >> "$GITHUB_ENV"
+          DAY=$(date -u +%F) python3 src/state.py status ${{ inputs.force && '--force' || '' }}
+
+      # Everything below is skipped when today's video is already posted
       - uses: actions/setup-python@v5
+        if: steps.status.outputs.pending == 'true'
         with:
           python-version: "3.11"
           cache: pip
+      - name: Remember the Kokoro voice model between runs
+        if: steps.status.outputs.pending == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: kokoro-model-v1
       - name: System packages (ffmpeg, espeak for Kokoro, fonts)
+        if: steps.status.outputs.pending == 'true'
         run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng fonts-dejavu-core
       - name: Python packages (CPU-only torch keeps the download small)
+        if: steps.status.outputs.pending == 'true'
         run: |
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
       - name: Generate today's lesson (nothing is stored in the repo)
-        run: python src/generate_lesson.py --topic "${{ github.event.inputs.topic || 'auto' }}" --out out/lesson.json
-      - name: Build videos, descriptions and hashtags
+        if: steps.status.outputs.pending == 'true'
+        run: python src/generate_lesson.py --topic "$TOPIC" --out out/lesson.json
+      - name: Build videos, thumbnail, descriptions and hashtags
+        if: steps.status.outputs.pending == 'true'
         run: python src/make_video.py out/lesson.json
-      - name: Keep a copy of the videos
+      - name: Keep a copy of the files
+        if: steps.status.outputs.pending == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: video
           path: out/
           retention-days: 7
+
       - name: Post to YouTube
-        if: ${{ env.YT_REFRESH_TOKEN != '' }}
+        if: steps.status.outputs.youtube == 'todo'
+        continue-on-error: true   # a YouTube problem must not stop TikTok
         env:
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
-          PRIVACY: private   # change to public only after you trust the output
+          PRIVACY: ${{ vars.YT_PRIVACY || 'private' }}   # set the repo variable YT_PRIVACY to public to go live
         run: python src/upload_youtube.py out
+      - name: Record YouTube
+        if: steps.status.outputs.youtube == 'todo'
+        run: python3 src/state.py record youtube out/result_youtube.json && tools/push_state.sh
+
       - name: Post to TikTok
-        # always(): still try TikTok if YouTube failed, so one problem does not block both
-        if: ${{ always() && env.TIKTOK_REFRESH_TOKEN != '' }}
+        if: steps.status.outputs.tiktok == 'todo'
+        continue-on-error: true
         env:
           TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
           TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
-          TIKTOK_PRIVACY: SELF_ONLY   # TikTok forces private until your app is audited
+          TIKTOK_PRIVACY: ${{ vars.TIKTOK_PRIVACY || 'SELF_ONLY' }}   # TikTok forces private until your app is audited
         run: python src/upload_tiktok.py out
+      - name: Record TikTok
+        if: steps.status.outputs.tiktok == 'todo'
+        run: python3 src/state.py record tiktok out/result_tiktok.json && tools/push_state.sh
+
+      - name: Save the daily record
+        if: always() && steps.status.outputs.pending == 'true'
+        run: tools/push_state.sh
+      - name: Fail the run if a connected platform is still missing
+        if: steps.status.outputs.pending == 'true'
+        run: python3 src/state.py verify
+
+      - name: Open an issue so you hear about it
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          OPEN=$(gh issue list --state open --search "Daily post failed in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$OPEN" ]; then
+            gh issue comment "$OPEN" --body "Failed again on $DAY: $RUN"
+          else
+            gh issue create --title "Daily post failed" \
+              --body "The daily video did not post on $DAY. Details: $RUN. The backup run tries again later today. Open the run to see which step failed."
+          fi

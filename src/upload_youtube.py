@@ -41,7 +41,11 @@ def main(out_dir="out"):
     resp = None
     while resp is None:
         _, resp = req.next_chunk()
-    print("Uploaded:", f"https://youtu.be/{resp['id']}")
+    url = f"https://youtu.be/{resp['id']}"
+    print("Uploaded:", url)
+    # write the record first: the thumbnail below is optional and must never hide a successful upload
+    (out / "result_youtube.json").write_text(json.dumps(
+        {"id": resp["id"], "url": url, "privacy": body["status"]["privacyStatus"]}))
     thumb = out / "thumbnail.png"
     if thumb.exists():
         try:  # custom thumbnails need a verified YouTube channel; do not fail the upload over it

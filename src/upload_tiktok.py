@@ -1,6 +1,8 @@
 """Post out/video_vertical.mp4 to TikTok with the Content Posting API.
 
-Needs secrets TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_REFRESH_TOKEN.
+Needs secrets TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_REFRESH_TOKEN,
+and STATE_KEY (any long random text) so a rotated refresh token can be saved.
+Writes out/result_tiktok.json for the daily record.
 
 IMPORTANT: until TikTok audits your app, every post is forced to private
 (SELF_ONLY). Set TIKTOK_PRIVACY=PUBLIC_TO_EVERYONE only after the audit passes.
@@ -13,23 +15,39 @@ from pathlib import Path
 
 import requests
 
+import secrets_store
+
 API = "https://open.tiktokapis.com"
 
 
 def get_access_token():
+    """Refresh the access token. TikTok may return a NEW refresh token and says to
+    use it from then on, so a rotated one is saved (encrypted) in the state branch."""
+    secret_rt = os.environ["TIKTOK_REFRESH_TOKEN"]
+    key = os.environ.get("STATE_KEY", "")
+    token_file = Path(os.environ.get("STATE_DIR", "state")) / "tiktok_token.enc"
+    saved = secrets_store.load_token(token_file, key, secret_rt) if key else None
+    refresh_token = saved or secret_rt
+
     r = requests.post(f"{API}/v2/oauth/token/", data={
         "client_key": os.environ["TIKTOK_CLIENT_KEY"],
         "client_secret": os.environ["TIKTOK_CLIENT_SECRET"],
         "grant_type": "refresh_token",
-        "refresh_token": os.environ["TIKTOK_REFRESH_TOKEN"],
+        "refresh_token": refresh_token,
     }, timeout=60)
     r.raise_for_status()
     data = r.json()
     if "access_token" not in data:
         raise SystemExit(f"TikTok token refresh failed: {data.get('error_description') or data.get('error')}")
-    if data.get("refresh_token") and data["refresh_token"] != os.environ["TIKTOK_REFRESH_TOKEN"]:
-        # Never print the token (logs are visible). Re-run tools/get_tiktok_token.py if posting stops working.
-        print("Note: TikTok issued a new refresh token. The saved one may stop working before it expires.")
+    new = data.get("refresh_token")
+    if new and new != refresh_token:  # never print tokens: logs are visible
+        if key:
+            secrets_store.save_token(token_file, key, new, secret_rt)
+            print("TikTok issued a new refresh token; saved it encrypted for tomorrow.")
+        else:
+            print("::warning::TikTok issued a new refresh token but STATE_KEY is not set, so it "
+                  "cannot be saved. The TIKTOK_REFRESH_TOKEN secret may stop working. "
+                  "Add a STATE_KEY secret (any long random text) and run again.")
     return data["access_token"]
 
 
@@ -81,16 +99,20 @@ def main(out_dir="out"):
     if r.status_code not in (200, 201, 206):
         raise SystemExit(f"TikTok upload failed: HTTP {r.status_code} {r.text[:200]}")
 
+    result = {"publish_id": init["publish_id"], "privacy": privacy}
     for _ in range(40):  # wait up to about 6 minutes
         st = post("/v2/post/publish/status/fetch/", token, {"publish_id": init["publish_id"]})
         print("TikTok status:", st["status"])
         if st["status"] == "PUBLISH_COMPLETE":
             print(f"Posted to TikTok as {privacy}.")
+            (out / "result_tiktok.json").write_text(json.dumps(dict(result, status="posted")))
             return
         if st["status"] == "FAILED":
             raise SystemExit(f"TikTok failed: {st.get('fail_reason')}")
         time.sleep(10)
-    raise SystemExit("TikTok is still processing; check the TikTok app.")
+    # Uploaded but TikTok is slow. Record it anyway: retrying could post the same video twice.
+    print("::warning::TikTok is still processing this video. Check the TikTok app.")
+    (out / "result_tiktok.json").write_text(json.dumps(dict(result, status="processing")))
 
 
 if __name__ == "__main__":
