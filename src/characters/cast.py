@@ -8,7 +8,7 @@ be swapped freely. To change the cast, edit this file only.
 CAST_KIDS = [
     {"name": "Amina", "skin": (141, 85, 36), "hair": (30, 25, 25), "style": "bun",
      "shirt": (255, 105, 135), "pants": (70, 90, 160)},
-    {"name": "Leo", "skin": (241, 194, 125), "hair": (140, 80, 40), "style": "short",
+    {"name": "Jomo", "skin": (241, 194, 125), "hair": (140, 80, 40), "style": "short",
      "shirt": (80, 170, 230), "pants": (90, 90, 110)},
     {"name": "Mei", "skin": (255, 224, 189), "hair": (30, 25, 25), "style": "long",
      "shirt": (120, 200, 110), "pants": (60, 120, 100)},
@@ -18,7 +18,7 @@ CAST_KIDS = [
 
 # Two friendly animal pals who join every lesson.
 CAST_ANIMALS = {
-    "kibo": {"name": "Kibo", "body": (255, 225, 130), "ears": "round", "tail": "puff",
+    "zippa": {"name": "Zippa", "body": (255, 225, 130), "ears": "round", "tail": "puff",
             "pattern": "spots", "scale": 1.0, "tall": 1.0},
     "mo": {"name": "Mo", "body": (170, 210, 255), "ears": "floppy", "tail": "curl",
            "pattern": "none", "scale": 1.05, "tall": 1.1},
