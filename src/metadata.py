@@ -41,6 +41,12 @@ TOPIC_INFO = {
     "babyanimals": {"skill": "the names of baby animals", "ages": "ages 3 to 7",
                     "tags": ["babyanimals", "animalsforkids", "youngones", "learnanimals"],
                     "hooks": ["Do you know what a baby cow is called?", "Meet the baby animals!"]},
+    "phonics": {"skill": "letter sounds and the first sound of words", "ages": "ages 3 to 6",
+                "tags": ["phonics", "lettersounds", "learntoread", "alphabetforkids"],
+                "hooks": ["What sound does this letter make?", "Let us sound out letters together!"]},
+    "spelling": {"skill": "spelling short words one letter at a time", "ages": "ages 4 to 7",
+                 "tags": ["spelling", "spellingforkids", "learntoread", "sightwords"],
+                 "hooks": ["Can you spell it with us?", "Letter by letter, we spell it!"]},
 }
 COMMON_TAGS = ["kidslearning", "educationalvideos", "cartoonsforkids", "kidssongs", "learningforkids"]
 FALLBACK = {"skill": "learning something new", "ages": "ages 3 to 10",

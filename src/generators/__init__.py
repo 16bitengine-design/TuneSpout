@@ -4,6 +4,7 @@ import random
 from generators.language_lessons import plurals
 from generators.math_lessons import addition, counting, division, multiplication, subtraction
 from generators.nature_lessons import animal_sounds, baby_animals
+from generators.reading_lessons import phonics, spelling
 from generators.sports_lessons import fair_play, sports_names, team_score
 
 GENERATORS = {
@@ -18,6 +19,8 @@ GENERATORS = {
     "fairplay": fair_play,
     "animalsounds": animal_sounds,
     "babyanimals": baby_animals,
+    "phonics": phonics,
+    "spelling": spelling,
 }
 TOPICS = list(GENERATORS)
 
@@ -28,6 +31,8 @@ TOPICS = list(GENERATORS)
 MIN_MINUTES, MAX_MINUTES = 1.0, 9.0
 TOPIC_MINUTES = {
     "counting": (1.0, 2.0),
+    "phonics": (1.5, 3.0),
+    "spelling": (2.0, 4.0),
     "animalsounds": (1.5, 3.0),
     "babyanimals": (1.5, 3.0),
     "plurals": (1.5, 3.0),

@@ -62,6 +62,9 @@ To add a new object, add one entry to `LIBRARY` (see the shape format at the top
 ## Animal lessons
 `animalsounds` (what the cow says) and `babyanimals` (a baby cow is a calf) use nine drawn farm animals: dog, cat, cow, duck, sheep, pig, chicken, horse and frog. Add more in `src/characters/animals.py` with their sound and baby name.
 
+## Reading lessons
+`phonics` teaches letter sounds ("B says buh. B is for ball!") and `spelling` spells short words one letter at a time (C, A, T, cat!). Only things the system can draw clearly are used, so the picture always matches the letter and word. Add more in `src/generators/reading_lessons.py`.
+
 ## The cast
 Four main kids (Amina, Jomo, Mei, Kofi) and two animal friends (Yumbi and Lumbo) appear in every video, always looking the same. Two to three kids from the cast lead each lesson. Two small background kids with random looks stand behind them: these are extras, made fresh for each video. To change the cast, edit `src/characters/cast.py`. `branding/cast.png` is a picture of everyone for channel art.
 

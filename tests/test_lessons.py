@@ -241,3 +241,26 @@ def test_animal_lessons_teach_the_right_facts_and_every_animal_is_drawn():
             if "is called a" in sc["line"]:
                 adult, baby = sc["items"]["types"]
                 assert sc["line"] == f"A baby {adult} is called a {ANIMALS[adult]['baby']}!" and baby == ANIMALS[adult]["baby"]
+
+
+def test_phonics_and_spelling_match_picture_letter_and_word():
+    from generators.reading_lessons import LETTERS, SPELL_WORDS
+    for _, _, thing in LETTERS:
+        assert thing in LIBRARY_THINGS()
+    for word in SPELL_WORDS:
+        assert word in LIBRARY_THINGS()
+    for seed in range(20):
+        for sc in generate("phonics", seed)["scenes"]:
+            if "is for" in sc["line"]:
+                letter, _, thing = sc["line"].partition(" is for ")
+                assert thing.rstrip("!") == sc["items"]["type"] and sc["items"]["type"][0].upper() == letter
+        for sc in generate("spelling", seed)["scenes"]:
+            if "items" in sc and sc["equation"].replace(" ", "").lower() == sc["items"]["type"]:
+                assert len(sc["equation"].split()) == len(sc["items"]["type"])
+
+
+def LIBRARY_THINGS():
+    import characters.animals  # noqa: F401
+    from characters.items import COLORS as LEGACY
+    from characters.library import LIBRARY
+    return set(LIBRARY) | set(LEGACY)
