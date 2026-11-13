@@ -99,3 +99,62 @@ def finding_out(seed):
     return lesson(rng, f"Ask, Look, Check with {A} and {B} | Finding Answers for Kids",
                   f"Learn how to ask a question and check the answer with {A} and {B}. Research skills for kids.",
                   ["research for kids", "asking questions", "thinking skills", "kids learning"], scenes)
+
+
+# what a good leader does, with something to look at
+LEADER_HABITS = [
+    ("Listen", "bell", "A good leader listens to every friend."),
+    ("Share ideas", "book", "A good leader shares ideas and asks for more ideas."),
+    ("Take turns", "ball", "A good leader lets everyone have a turn."),
+    ("Help others", "heart", "A good leader helps friends who need a hand."),
+    ("Be kind", "heart", "A good leader is kind, even when things are hard."),
+]
+
+# a little story to report: who, what, where
+REPORTS = [
+    ("kite", "a kite", "on the hill", "flew a kite"),
+    ("ball", "a ball", "at the park", "played with a ball"),
+    ("tree", "a tree", "in the garden", "planted a tree"),
+    ("book", "a book", "in the classroom", "read a book"),
+]
+
+
+def leadership(seed):
+    rng = random.Random(seed)
+    kids = make_kids(rng, 2)
+    A, B = kids[0]["name"], kids[1]["name"]
+    picks = rng.sample(LEADER_HABITS, 4)
+    scenes = [{"kids": kids, "line": f"Hello! We are {A} and {B}. Today we learn how to be a good leader!"}]
+    for label, thing, line in picks:
+        shown = {"type": thing, "count": 1, "scale": BIG}
+        scenes += [
+            {"kids": kids, "items": shown, "equation": label, "line": line},
+            {"kids": kids, "items": shown, "equation": label, "cheer": True, "line": f"Good leaders: {label.lower()}!"},
+        ]
+    scenes.append({"kids": kids, "cheer": True,
+                   "line": f"You can be a leader too! Bye from {A} and {B}!"})
+    return lesson(rng, f"Be a Good Leader with {A} and {B} | Leadership for Kids",
+                  f"Learn four habits of a good leader with {A} and {B}. Leadership skills for kids.",
+                  ["leadership for kids", "life skills", "teamwork", "kids learning"], scenes)
+
+
+def reporting(seed):
+    rng = random.Random(seed)
+    kids = make_kids(rng, 2)
+    A, B = kids[0]["name"], kids[1]["name"]
+    thing, what, where, did = rng.choice(REPORTS)
+    shown = {"type": thing, "count": 1, "scale": BIG}
+    scenes = [
+        {"kids": kids, "line": f"Hi! We are {A} and {B}. Today we learn to tell a report!"},
+        {"kids": kids, "equation": "Report", "line": "A report tells what happened. We say who, what and where."},
+        {"kids": kids, "equation": "Who?", "line": f"Who? {A} and {B}!"},
+        {"kids": kids, "items": shown, "equation": "What?", "cheer": True,
+         "line": f"What? We {did}!"},
+        {"kids": kids, "items": shown, "equation": "Where?", "line": f"Where? {cap(where)}."},
+        {"kids": kids, "items": shown, "equation": "Report", "cheer": True,
+         "line": f"Here is our report. {A} and {B} {did} {where}."},
+        {"kids": kids, "cheer": True, "line": f"Great reporting! Now you can tell a report too. Bye from {A} and {B}!"},
+    ]
+    return lesson(rng, f"Tell a Report with {A} and {B} | Who, What, Where",
+                  f"Learn to report what happened using who, what and where with {A} and {B}.",
+                  ["reporting for kids", "storytelling for kids", "speaking skills", "kids learning"], scenes)

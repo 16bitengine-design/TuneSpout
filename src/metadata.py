@@ -56,6 +56,12 @@ TOPIC_INFO = {
     "findingout": {"skill": "asking questions and checking answers", "ages": "ages 5 to 9",
                    "tags": ["research", "askingquestions", "thinkingskills", "curiouskids"],
                    "hooks": ["Ask, look, check: find any answer!", "Be a curious kid with us!"]},
+    "leadership": {"skill": "the habits of a good leader", "ages": "ages 5 to 10",
+                   "tags": ["leadership", "leadershipforkids", "teamwork", "lifeskills"],
+                   "hooks": ["Be a good leader with us!", "Four habits of a great leader!"]},
+    "reporting": {"skill": "telling a report with who, what and where", "ages": "ages 5 to 9",
+                  "tags": ["reporting", "storytelling", "speakingskills", "kidscommunication"],
+                  "hooks": ["Who, what, where? Tell a report!", "Practice speaking with us!"]},
 }
 COMMON_TAGS = ["kidslearning", "educationalvideos", "cartoonsforkids", "kidssongs", "learningforkids"]
 FALLBACK = {"skill": "learning something new", "ages": "ages 3 to 10",
