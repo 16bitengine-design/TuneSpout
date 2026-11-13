@@ -255,8 +255,9 @@ def test_phonics_and_spelling_match_picture_letter_and_word():
                 letter, _, thing = sc["line"].partition(" is for ")
                 assert thing.rstrip("!") == sc["items"]["type"] and sc["items"]["type"][0].upper() == letter
         for sc in generate("spelling", seed)["scenes"]:
-            if "items" in sc and sc["equation"].replace(" ", "").lower() == sc["items"]["type"]:
-                assert len(sc["equation"].split()) == len(sc["items"]["type"])
+            if "We spelled" in sc["line"]:  # the last scene shows every letter of the word
+                assert sc["equation"].replace(" ", "").lower() == sc["items"]["type"]
+                assert sc["equation"].count(" ") == len(sc["items"]["type"]) - 1
 
 
 def LIBRARY_THINGS():
