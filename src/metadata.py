@@ -47,6 +47,15 @@ TOPIC_INFO = {
     "spelling": {"skill": "spelling short words one letter at a time", "ages": "ages 4 to 7",
                  "tags": ["spelling", "spellingforkids", "learntoread", "sightwords"],
                  "hooks": ["Can you spell it with us?", "Letter by letter, we spell it!"]},
+    "planning": {"skill": "making a plan with first, next and last", "ages": "ages 4 to 8",
+                 "tags": ["planning", "lifeskills", "problemsolving", "kidsthinking"],
+                 "hooks": ["First, next, last: make a plan!", "Big jobs are easy with a plan!"]},
+    "kindwords": {"skill": "kind words and good manners", "ages": "ages 3 to 7",
+                  "tags": ["manners", "kindness", "peopleskills", "pleaseandthankyou"],
+                  "hooks": ["Magic words that make friends smile!", "Please and thank you with us!"]},
+    "findingout": {"skill": "asking questions and checking answers", "ages": "ages 5 to 9",
+                   "tags": ["research", "askingquestions", "thinkingskills", "curiouskids"],
+                   "hooks": ["Ask, look, check: find any answer!", "Be a curious kid with us!"]},
 }
 COMMON_TAGS = ["kidslearning", "educationalvideos", "cartoonsforkids", "kidssongs", "learningforkids"]
 FALLBACK = {"skill": "learning something new", "ages": "ages 3 to 10",

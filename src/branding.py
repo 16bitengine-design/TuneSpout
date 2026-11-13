@@ -228,6 +228,7 @@ HEADLINES = {
     "multiplication": "TIMES TABLES!", "division": "SHARE FAIRLY!", "plurals": "ONE & MANY!",
     "sports": "FUN SPORTS!", "teamscore": "TEAM GOALS!", "fairplay": "PLAY FAIR!",
     "animalsounds": "ANIMAL SOUNDS!", "babyanimals": "BABY ANIMALS!",
+    "planning": "MAKE A PLAN!", "kindwords": "KIND WORDS!", "findingout": "ASK & CHECK!",
     "phonics": "LETTER SOUNDS!", "spelling": "LET'S SPELL!",
 }
 
