@@ -17,7 +17,7 @@ PATTERNS = ["none", "spots", "stripes"]
 SYLLABLES = ["zib", "bo", "mi", "lo", "pip", "fu", "ta", "nim", "kee", "wu", "do", "ra",
              "fli", "mo", "pu", "zee", "lu", "bee", "tu", "nox", "jo", "pa"]
 # names must never contain these pieces, even inside a longer word
-BANNED_PIECES = {"kill", "die", "dead", "blood", "gun", "hit", "fat", "hate", "dumb", "ugly", "poo", "butt"}
+BANNED_PIECES = {"kill", "die", "dead", "blood", "gun", "hit", "fat", "hate", "dumb", "ugly", "poo", "butt", "pig"}
 
 
 def make_name(rng):

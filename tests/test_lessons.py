@@ -220,7 +220,7 @@ def test_animal_lessons_teach_the_right_facts_and_every_animal_is_drawn():
     from characters.animals import ANIMALS
     from characters.library import draw_named
     facts = {"dog": ("woof", "puppy"), "cat": ("meow", "kitten"), "cow": ("moo", "calf"),
-             "sheep": ("baa", "lamb"), "pig": ("oink", "piglet"), "frog": ("ribbit", "tadpole")}
+             "sheep": ("baa", "lamb"), "frog": ("ribbit", "tadpole")}
     for name, (sound, baby) in facts.items():
         assert ANIMALS[name] == {"sound": sound, "baby": baby}
     for animal, info in ANIMALS.items():
@@ -265,3 +265,26 @@ def LIBRARY_THINGS():
     from characters.items import COLORS as LEGACY
     from characters.library import LIBRARY
     return set(LIBRARY) | set(LEGACY)
+
+
+def test_banned_words_never_appear_in_any_video_text():
+    """The channel owner does not want 'pig' (or piglet) seen or heard in any video."""
+    import json
+
+    from generators import GENERATORS
+    from metadata import youtube
+    for topic in GENERATORS:
+        for seed in range(40):
+            lesson = generate(topic, seed)
+            text = (json.dumps(lesson) + json.dumps(youtube(lesson))).lower()
+            assert not re.search(r"\bpig", text), f"'pig' found in {topic} seed {seed}"
+
+
+def test_the_safety_check_rejects_banned_words():
+    import pytest
+
+    from safety import check_lesson
+    with pytest.raises(ValueError):
+        check_lesson({"scenes": [{"line": "Look at the little piglet!"}]})
+    with pytest.raises(ValueError):
+        check_lesson({"title": "Pigs", "scenes": [{"line": "Hello!"}]})

@@ -60,7 +60,7 @@ The system makes its own visuals for each video, with no drawings to store:
 To add a new object, add one entry to `LIBRARY` (see the shape format at the top of `src/characters/shapes.py`).
 
 ## Animal lessons
-`animalsounds` (what the cow says) and `babyanimals` (a baby cow is a calf) use nine drawn farm animals: dog, cat, cow, duck, sheep, pig, chicken, horse and frog. Add more in `src/characters/animals.py` with their sound and baby name.
+`animalsounds` (what the cow says) and `babyanimals` (a baby cow is a calf) use eight drawn farm animals: dog, cat, cow, duck, sheep, chicken, horse and frog. Add more in `src/characters/animals.py` with their sound and baby name.
 
 ## Reading lessons
 `phonics` teaches letter sounds ("B says buh. B is for ball!") and `spelling` spells short words one letter at a time (C, A, T, cat!). Only things the system can draw clearly are used, so the picture always matches the letter and word. Add more in `src/generators/reading_lessons.py`.

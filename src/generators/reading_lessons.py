@@ -10,12 +10,12 @@ BIG = 2.4
 # letter, how its sound is spelled out for the voice, a thing that starts with it
 LETTERS = [
     ("a", "ah", "apple"), ("b", "buh", "ball"), ("c", "kuh", "cat"), ("d", "duh", "dog"),
-    ("f", "fuh", "frog"), ("h", "huh", "hat"), ("k", "kuh", "kite"), ("p", "puh", "pig"),
+    ("f", "fuh", "frog"), ("h", "huh", "hat"), ("k", "kuh", "kite"), ("p", "puh", "pencil"),
     ("s", "sss", "star"), ("t", "tuh", "tree"), ("u", "uh", "umbrella"),
 ]
 
 # short words we can both spell and draw
-SPELL_WORDS = ["cat", "dog", "pig", "hat", "cup", "cow"]
+SPELL_WORDS = ["cat", "dog", "hat", "cup", "cow"]
 
 
 def a_or_an(thing):

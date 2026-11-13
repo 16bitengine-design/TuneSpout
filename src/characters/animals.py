@@ -46,9 +46,6 @@ ANIMAL_RECIPES = {
               E(-.7, .1, .38, .4, "cream"), E(.7, .1, .38, .4, "cream"), E(0, .0, .55, .72, "dgray"),
               E(-.55, -.08, .2, .1, "dgray"), E(.55, -.08, .2, .1, "dgray")] + _eyes(-.08, .2, .08)
              + [E(0, .28, .1, .07, "rose")],
-    "pig": [P([[-.85, -.4], [-.45, -.7], [-.35, -.2]], "rose"), P([[.85, -.4], [.45, -.7], [.35, -.2]], "rose"),
-            E(0, 0, .86, .8, "pink"), E(0, .22, .38, .28, "rose"), E(-.13, .22, .06, .09, "dgray"),
-            E(.13, .22, .06, .09, "dgray")] + _eyes(-.22, .32),
     "chicken": [E(0, .35, .85, .62, "white"), E(0, -.35, .46, .46, "white"),
                 E(-.14, -.88, .13, .16, "red"), E(0, -.95, .15, .2, "red"), E(.14, -.88, .13, .16, "red"),
                 P([[-.13, -.3], [.13, -.3], [0, -.08]], "orange"), E(0, -.04, .07, .13, "red")] + _eyes(-.45, .2, .07),
@@ -69,7 +66,6 @@ ANIMALS = {
     "cow": {"sound": "moo", "baby": "calf"},
     "duck": {"sound": "quack", "baby": "duckling"},
     "sheep": {"sound": "baa", "baby": "lamb"},
-    "pig": {"sound": "oink", "baby": "piglet"},
     "chicken": {"sound": "cluck", "baby": "chick"},
     "horse": {"sound": "neigh", "baby": "foal"},
     "frog": {"sound": "ribbit", "baby": "tadpole"},
