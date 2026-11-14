@@ -6,8 +6,8 @@
 Buffer only takes videos from a public web link, so the file is first put on
 Cloudinary (free tier). Writes out/result_<platform>.json for the daily record.
 
-Secrets: BUFFER_API_KEY, BUFFER_YOUTUBE_CHANNEL_ID, BUFFER_TIKTOK_CHANNEL_ID,
-CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.
+Secrets: BUFFER_API_KEY (the channels are found automatically; to pin one, also set
+BUFFER_YOUTUBE_CHANNEL_ID / BUFFER_TIKTOK_CHANNEL_ID), CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.
 Settings (repo Variables): YT_PRIVACY (private|unlisted|public, default private),
 TIKTOK_MODE (draft|post, default draft).
 """
@@ -20,6 +20,8 @@ import time
 from pathlib import Path
 
 import requests
+
+from buffer_channels import channel_ids
 
 BUFFER = "https://api.buffer.com"
 FILES = {"youtube": "video.mp4", "tiktok": "video_vertical.mp4"}
@@ -69,10 +71,10 @@ def cloudinary_prune():
 GAP_MINUTES = 60  # later episodes of a long lesson go out an hour apart, in order
 
 
-def build_input(platform, meta, url, env=os.environ, episode=0):
+def build_input(platform, meta, url, env=os.environ, episode=0, channel_id=None):
     """The Buffer createPost input for one platform. episode 0 goes out now."""
     body = {
-        "channelId": env[f"BUFFER_{platform.upper()}_CHANNEL_ID"],
+        "channelId": channel_id or env[f"BUFFER_{platform.upper()}_CHANNEL_ID"],
         "schedulingType": "automatic",
         "mode": "shareNow",
         "aiAssisted": True,
@@ -116,13 +118,16 @@ def create_post(body):
 def main(platform, out_dir="out"):
     out = Path(out_dir)
     folders = json.loads((out / "episodes.json").read_text()) if (out / "episodes.json").exists() else ["."]
+    channel_id = channel_ids().get(platform)
+    if not channel_id:
+        raise SystemExit(f"No {platform} channel is connected in Buffer.")
     day = os.environ.get("DAY") or datetime.date.today().isoformat()
     ids, saved_as = [], "posted"
     for number, folder in enumerate(folders):
         ep = out / folder
         meta = json.loads((ep / ("meta.json" if platform == "youtube" else "tiktok.json")).read_text())
         url = cloudinary_upload(ep / FILES[platform], f"tunespout/{day}-{platform}-{number + 1}")
-        body = build_input(platform, meta, url, episode=number)
+        body = build_input(platform, meta, url, episode=number, channel_id=channel_id)
         ids.append(create_post(body))
         saved_as = "draft" if body.get("saveToDraft") else "posted"
         print(f"Sent episode {number + 1} of {len(folders)} to Buffer ({platform}, {saved_as}).")

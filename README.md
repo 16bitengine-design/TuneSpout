@@ -28,7 +28,7 @@ Posting goes through **Buffer**, so you never deal with YouTube or TikTok develo
 **Buffer**
 1. In Buffer, connect your YouTube channel and your TikTok account.
 2. Create an API key (Buffer account settings, API) and add it as secret `BUFFER_API_KEY`.
-3. Run `BUFFER_API_KEY=... python tools/list_buffer_channels.py`. It prints each channel's id. Add the YouTube one as `BUFFER_YOUTUBE_CHANNEL_ID` and the TikTok one as `BUFFER_TIKTOK_CHANNEL_ID`. A platform whose id is missing is skipped.
+3. That is all: the workflow finds your YouTube and TikTok channels from the key. (If you have two channels of one kind, or want to pin one, add secret `BUFFER_YOUTUBE_CHANNEL_ID` or `BUFFER_TIKTOK_CHANNEL_ID`. `tools/list_buffer_channels.py` prints the ids.) A platform that is not connected in Buffer is skipped.
 4. If a channel is set to "Requires Approval" in Buffer, posts arrive as drafts for you to approve.
 
 **Cloudinary** (Buffer only accepts a public link to a video, so each video is put here first; it is deleted after 7 days)

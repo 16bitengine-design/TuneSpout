@@ -195,3 +195,24 @@ def test_two_runs_finishing_together_both_get_saved(tmp_path, monkeypatch):
 
     final = json.loads(run(["git", "--git-dir", str(remote), "show", "state:posted.json"], tmp_path).stdout)
     assert set(final["2026-11-12"]) >= {"youtube", "tiktok"}
+
+
+def test_channels_are_found_from_the_api_key_alone(monkeypatch):
+    import buffer_channels
+    answers = {"organizations": {"account": {"organizations": [{"id": "o1", "name": "me"}]}},
+               "channels": {"channels": [{"id": "c-yt", "name": "Kids", "service": "youtube"},
+                                         {"id": "c-tt", "name": "Kids", "service": "tiktok"},
+                                         {"id": "c-x", "name": "Other", "service": "instagram"}]}}
+    ask = lambda q: answers["organizations" if "organizations" in q else "channels"]  # noqa: E731
+    assert buffer_channels.channel_ids({"BUFFER_API_KEY": "k"}, ask) == {"youtube": "c-yt", "tiktok": "c-tt"}
+    pinned = {"BUFFER_API_KEY": "k", "BUFFER_YOUTUBE_CHANNEL_ID": "mine"}
+    assert buffer_channels.channel_ids(pinned, ask) == {"youtube": "mine", "tiktok": "c-tt"}
+    assert buffer_channels.channel_ids({}, ask) == {}  # no key, nothing connected
+
+
+def test_a_failed_channel_lookup_means_nothing_is_posted_not_a_crash(monkeypatch):
+    import buffer_channels
+
+    def broken(query):
+        raise RuntimeError("down")
+    assert buffer_channels.channel_ids({"BUFFER_API_KEY": "k"}, broken) == {}
