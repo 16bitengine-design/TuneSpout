@@ -8,7 +8,14 @@
       "status": "draft"
     },
     "title": "Playing Fair with Amina and Kofi | Sports and Friendship",
-    "topic": "fairplay"
+    "topic": "fairplay",
+    "youtube": {
+      "id": "6af8642de86a5789a6acacab",
+      "ids": [
+        "6af8642de86a5789a6acacab"
+      ],
+      "status": "posted"
+    }
   },
   "_last_run": "2026-11-14"
 }
