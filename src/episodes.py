@@ -1,4 +1,4 @@
-"""Split a long lesson into parts that are never longer than three minutes.
+"""Split a long lesson into parts that are never longer than three minutes (YouTube Shorts).
 
 A lesson up to three minutes stays one video. A longer one is cut at scene
 boundaries (never in the middle of a line) into the fewest parts that fit,
@@ -6,7 +6,7 @@ made as equal in length as the scenes allow.
 """
 import math
 
-LIMIT = 180.0  # the longest any part may be, in seconds
+LIMIT = 175.0  # the longest any part may be, in seconds (YouTube Shorts allow up to 3 minutes)
 
 
 def split(durations, limit=LIMIT):

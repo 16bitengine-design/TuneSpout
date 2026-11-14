@@ -146,7 +146,7 @@ def test_long_lessons_split_into_parts_of_at_most_three_minutes():
     import random
 
     import episodes
-    assert episodes.split([10.0] * 18) == [(0, 18)]                  # exactly 180 s: one video
+    assert episodes.split([10.0] * 17) == [(0, 17)]                  # 170 s: one video
     assert episodes.split([10.0] * 19) == [(0, 10), (10, 19)]        # 190 s: two even parts
     assert episodes.split([10.0] * 60) == [(i * 15, i * 15 + 15) for i in range(4)]  # 600 s: 4 x 150 s
     rng = random.Random(5)
@@ -155,7 +155,7 @@ def test_long_lessons_split_into_parts_of_at_most_three_minutes():
         ranges = episodes.split(durs)
         assert ranges[0][0] == 0 and ranges[-1][1] == len(durs)
         assert all(a[1] == b[0] for a, b in zip(ranges, ranges[1:])), "no scene lost or repeated"
-        assert all(sum(durs[a:b]) <= 180 for a, b in ranges), "a part ran over three minutes"
+        assert all(sum(durs[a:b]) <= 180 for a, b in ranges), "a part ran over three minutes (YouTube Shorts)"
     assert episodes.episode_title("Add!", 2, 3) == "Add! (Part 2 of 3)"
     assert episodes.episode_title("Add!", 1, 1) == "Add!"
 
@@ -288,3 +288,8 @@ def test_the_safety_check_rejects_banned_words():
         check_lesson({"scenes": [{"line": "Look at the little piglet!"}]})
     with pytest.raises(ValueError):
         check_lesson({"title": "Pigs", "scenes": [{"line": "Hello!"}]})
+
+
+def test_youtube_gets_the_vertical_video_because_buffer_posts_shorts_only():
+    import buffer_post
+    assert buffer_post.FILES == {"youtube": "video_vertical.mp4", "tiktok": "video_vertical.mp4"}

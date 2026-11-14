@@ -24,7 +24,8 @@ import requests
 from buffer_channels import channel_ids
 
 BUFFER = "https://api.buffer.com"
-FILES = {"youtube": "video.mp4", "tiktok": "video_vertical.mp4"}
+# Buffer publishes YouTube Shorts only (vertical, up to 3 minutes), so both platforms get the vertical video
+FILES = {"youtube": "video_vertical.mp4", "tiktok": "video_vertical.mp4"}
 MUTATION = """
 mutation CreatePost($input: CreatePostInput!) {
   createPost(input: $input) {
