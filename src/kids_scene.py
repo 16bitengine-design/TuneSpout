@@ -20,7 +20,7 @@ from characters.kids import draw_kid
 
 COLOR_KEYS = ("skin", "hair", "shirt", "pants")
 KID_X = {1: [0.14], 2: [0.12, 0.88]}
-KID_X_TALL = {1: [0.20], 2: [0.15, 0.85]}  # the same, for the vertical video
+KID_X_TALL = {1: [0.27], 2: [0.21, 0.79]}  # the same, for the vertical video
 
 
 def _clean_kid(kid):
@@ -38,12 +38,13 @@ def draw_kids_scene(scene, t, size=(render.W, render.H)):
     img = Image.new("RGB", (w, h))
     d = ImageDraw.Draw(img)
     render.background(d, w, h, t, pond=False)
-    ground = 0.72 if tall else 0.74
+    ground = 0.92 if tall else 0.74
+    sing = bool(scene.get("cheer"))
 
     # extras stand far back and small, so the main players stay the stars
     for i, kid in enumerate(scene.get("extras", [])):
-        draw_kid(d, w * (0.34 + 0.32 * i if tall else 0.40 + 0.20 * i), h * (ground - 0.03 if tall else 0.73),
-                 SS * (0.5 if tall else 0.62), t, phase=i * 2.1 + 0.7,
+        draw_kid(d, w * (0.36 + 0.28 * i if tall else 0.40 + 0.20 * i), h * (ground - 0.07 if tall else 0.73),
+                 SS * (0.85 if tall else 0.62), t, phase=i * 2.1 + 0.7,
                  cheer=bool(scene.get("cheer")), **_clean_kid(kid))
 
     # kids stand at the sides so the middle stays free for the things they use
@@ -51,18 +52,18 @@ def draw_kids_scene(scene, t, size=(render.W, render.H)):
     table = KID_X_TALL if tall else KID_X
     xs = table.get(len(kids), [(i + 1) / (len(kids) + 1) for i in range(len(kids))])
     for i, (kid, fx) in enumerate(zip(kids, xs)):
-        draw_kid(d, w * fx, h * ground, SS * (1.05 if tall else 1.2), t, phase=i * 1.3,
-                 cheer=bool(scene.get("cheer")), **_clean_kid(kid))
+        draw_kid(d, w * fx, h * ground, SS * (1.6 if tall else 1.2), t, phase=i * 1.3,
+                 cheer=sing, talking=bool(scene.get("line")), **_clean_kid(kid))
 
     # the animal friends stand between the kids
     pals = scene.get("pals", [])
     if tall:
-        pal_x = [0.50, 0.80] if len(kids) == 1 else [0.38, 0.62]
+        pal_x = [0.55, 0.85] if len(kids) == 1 else [0.40, 0.60]
     else:
         pal_x = [0.28, 0.86] if len(kids) == 1 else [0.30, 0.70]
     for i, pal in enumerate(pals):
-        draw_creature(d, w * (pal_x[i] if i < 2 else 0.5), h * ground, SS * (0.8 if tall else 1.0), t, i * 0.8,
-                      pal_genome(pal))
+        draw_creature(d, w * (pal_x[i] if i < 2 else 0.5), h * (ground + 0.01 if tall else ground),
+                      SS * (1.35 if tall else 1.0), t, i * 0.8, pal_genome(pal), singing=sing)
 
     items = scene.get("items")
     if items:
@@ -87,7 +88,7 @@ def draw_kids_scene(scene, t, size=(render.W, render.H)):
             in_row = min(per_row, total - row * per_row)
             if tall:
                 x = w / 2 + (col - (in_row - 1) / 2) * spacing
-                y = h * (0.37 + (row - (rows - 1) / 2) * 0.12)
+                y = h * (0.35 + (row - (rows - 1) / 2) * 0.115)
             else:
                 span = spacing * (total - 1) + gapx * (len(groups) - 1)
                 x = w / 2 - span / 2 + idx * spacing + gi * gapx
@@ -109,7 +110,7 @@ def draw_kids_scene(scene, t, size=(render.W, render.H)):
             f = render.font(size_px)
             box = d.textbbox((0, 0), eq, font=f)
         tw, th = box[2] - box[0], box[3] - box[1]
-        cx, cy = w / 2, h * (0.12 if tall else 0.14)
+        cx, cy = w / 2, h * (0.115 if tall else 0.14)
         d.rounded_rectangle([cx - tw / 2 - 40 * SS, cy - th / 2 - 30 * SS,
                              cx + tw / 2 + 40 * SS, cy + th / 2 + 30 * SS],
                             radius=30 * SS, fill=(255, 255, 255))

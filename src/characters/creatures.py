@@ -49,9 +49,9 @@ def new_pal(rng):
     return {"seed": seed, "name": make_name(random.Random(seed))}
 
 
-def draw_creature(d, cx, base_y, s, t, phase, g):
+def draw_creature(d, cx, base_y, s, t, phase, g, singing=False):
     s *= g["scale"]
-    bob = abs(math.sin(t * 3 + phase)) * 6 * s
+    bob = abs(math.sin(t * 3.6 + phase)) * (16 if singing else 9) * s
     y = base_y - bob
     bx, by = cx, y - 40 * s
     rx, ry = 42 * s, 38 * s * g["tall"]
@@ -97,13 +97,22 @@ def draw_creature(d, cx, base_y, s, t, phase, g):
 
     # little arms waving
     for sx in (-1, 1):
-        a = math.sin(t * 4 + phase + sx) * 10 * s
+        a = math.sin(t * 6 + phase + sx) * 16 * s
         ellipse(d, bx + sx * (rx + 3 * s), by + 6 * s - a, 8 * s, 8 * s, g["body"])
 
-    # happy face
+    # happy face: blinks, and opens its mouth when singing along
+    blink = (t * 1.0 + phase) % 3.0 < 0.14
     for sx in (-1, 1):
-        ellipse(d, bx + sx * 13 * s, by - 8 * s, 6 * s, 7 * s, (255, 255, 255))
-        ellipse(d, bx + sx * 13 * s, by - 7 * s, 3 * s, 4 * s, (40, 30, 40))
+        if blink:
+            d.line([(bx + sx * 13 * s - 5 * s, by - 7 * s), (bx + sx * 13 * s + 5 * s, by - 7 * s)],
+                   fill=(40, 30, 40), width=max(1, int(2.5 * s)))
+        else:
+            ellipse(d, bx + sx * 13 * s, by - 8 * s, 6 * s, 7 * s, (255, 255, 255))
+            ellipse(d, bx + sx * 13 * s, by - 7 * s, 3 * s, 4 * s, (40, 30, 40))
         ellipse(d, bx + sx * 25 * s, by + 4 * s, 6 * s, 4 * s, (255, 150, 150))
-    d.arc([bx - 10 * s, by - 2 * s, bx + 10 * s, by + 14 * s], 15, 165,
-          fill=(150, 60, 60), width=max(1, int(3 * s)))
+    if singing:
+        open_ = abs(math.sin(t * 8 + phase))
+        ellipse(d, bx, by + 7 * s, 7 * s, (2 + 7 * open_) * s, (150, 45, 65))
+    else:
+        d.arc([bx - 10 * s, by - 2 * s, bx + 10 * s, by + 14 * s], 15, 165,
+              fill=(150, 60, 60), width=max(1, int(3 * s)))

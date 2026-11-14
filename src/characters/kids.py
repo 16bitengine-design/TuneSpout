@@ -26,52 +26,70 @@ def _hair_front(d, cx, cy, r, color, style):
 
 
 def draw_kid(d, cx, base_y, s, t, phase=0.0, skin=SKIN[1], hair=HAIR[0],
-             style="short", shirt=SHIRTS[0], pants=PANTS[0], cheer=False):
-    """Draw a kid standing with feet at base_y. s = scale, t = time (seconds)."""
-    if cheer:
-        bob = abs(math.sin(t * 4 + phase)) * 10 * s
-    else:
-        bob = math.sin(t * 3 + phase) * 3 * s
-    y = base_y - bob
+             style="short", shirt=SHIRTS[0], pants=PANTS[0], cheer=False, talking=False):
+    """Draw a kid standing with feet at base_y. s = scale, t = time (seconds).
+    Always moving: bouncing to the beat, swaying, swinging arms, stepping from foot to
+    foot and blinking. cheer = big jumps with both arms up; talking = the mouth opens
+    and closes."""
+    beat = t * 3.4 + phase
+    hop = abs(math.sin(beat)) * (22 if cheer else 7) * s
+    sway = math.sin(t * 1.8 + phase) * 6 * s
+    y = base_y - hop
 
     r = 34 * s
     body_top = y - 105 * s
-    cy = body_top - 30 * s
+    bx = cx + sway                                           # the body leans side to side
+    hx0 = cx + sway * 1.7                                    # the head leans a little more
+    cy = body_top - 30 * s + math.sin(beat * 2) * 2 * s      # and nods to the beat
     if style == "long":  # hair behind the body, so it frames the face
-        ellipse(d, cx, cy + 30 * s, r * 1.12, r * 1.5, hair)
+        ellipse(d, hx0, cy + 30 * s, r * 1.12, r * 1.5, hair)
 
-    # legs and shoes
-    for dx in (-14, 14):
-        d.rounded_rectangle([cx + dx * s - 9 * s, y - 45 * s, cx + dx * s + 9 * s, y],
+    # legs and shoes: the feet take turns lifting
+    for dx, turn in ((-14, 0.0), (14, math.pi)):
+        lift = max(0.0, math.sin(beat * 2 + turn)) * (4 if cheer else 9) * s
+        d.rounded_rectangle([bx + dx * s - 9 * s, y - 45 * s, bx + dx * s + 9 * s, y - lift],
                             radius=int(6 * s), fill=pants)
-        ellipse(d, cx + dx * s + 3 * s, y, 13 * s, 7 * s, (60, 50, 50))
+        ellipse(d, bx + dx * s + 3 * s, y - lift, 13 * s, 7 * s, (60, 50, 50))
 
     # body
-    d.rounded_rectangle([cx - 30 * s, body_top, cx + 30 * s, y - 40 * s],
+    d.rounded_rectangle([bx - 30 * s, body_top, bx + 30 * s, y - 40 * s],
                         radius=int(18 * s), fill=shirt)
 
-    # arms: left rests, right waves (both up when cheering)
+    # arms: the right one waves, the left one swings (both wave when cheering)
     sh_y = body_top + 14 * s
     for side in (-1, 1):
-        sx = cx + side * 30 * s
+        sx = bx + side * 30 * s
         if side == 1 or cheer:
-            a = math.radians(-50 + 28 * math.sin(t * 5 + phase + side))
+            a = math.radians(-50 + 34 * math.sin(t * 6 + phase + side))
             if side == -1:
-                a = math.radians(180 + 50 - 28 * math.sin(t * 5 + phase))
+                a = math.radians(180 + 50 - 34 * math.sin(t * 6 + phase))
             hx, hy = sx + 52 * s * math.cos(a), sh_y + 52 * s * math.sin(a)
         else:
-            hx, hy = sx - 10 * s, sh_y + 46 * s
+            a = math.radians(112 + 22 * math.sin(beat + 1))
+            hx, hy = sx + 46 * s * math.cos(a), sh_y + 46 * s * math.sin(a)
         d.line([(sx, sh_y), (hx, hy)], fill=skin, width=int(12 * s))
         ellipse(d, hx, hy, 8 * s, 8 * s, skin)
 
     # head and hair
-    ellipse(d, cx, cy, r, r, skin)
-    _hair_front(d, cx, cy, r, hair, style)
+    ellipse(d, hx0, cy, r, r, skin)
+    _hair_front(d, hx0, cy, r, hair, style)
 
-    # face
+    # face: eyes blink every few seconds
+    blink = (t + phase * 0.7) % 3.3 < 0.14
     for ex in (-12, 12):
-        ellipse(d, cx + ex * s, cy + 6 * s, 4 * s, 5 * s, (40, 30, 30))
+        if blink:
+            d.line([(hx0 + (ex - 5) * s, cy + 7 * s), (hx0 + (ex + 5) * s, cy + 7 * s)],
+                   fill=(40, 30, 30), width=max(1, int(2.5 * s)))
+        else:
+            ellipse(d, hx0 + ex * s, cy + 6 * s, 4 * s, 5 * s, (40, 30, 30))
     for ex in (-21, 21):
-        ellipse(d, cx + ex * s, cy + 17 * s, 6 * s, 4 * s, (255, 150, 150))
-    d.arc([cx - 11 * s, cy + 8 * s, cx + 11 * s, cy + 26 * s], 15, 165,
-          fill=(150, 60, 60), width=max(1, int(3 * s)))
+        ellipse(d, hx0 + ex * s, cy + 17 * s, 6 * s, 4 * s, (255, 150, 150))
+    if talking:  # mouth opens and closes while the lesson is spoken
+        open_ = abs(math.sin(t * 9 + phase * 2))
+        mh = (2.5 + 8 * open_) * s
+        ellipse(d, hx0, cy + 18 * s, 8 * s, mh, (150, 45, 65))
+        if open_ > 0.55:
+            ellipse(d, hx0, cy + 18 * s + mh * 0.45, 5 * s, mh * 0.45, (255, 130, 140))
+    else:
+        d.arc([hx0 - 11 * s, cy + 8 * s, hx0 + 11 * s, cy + 26 * s], 15, 165,
+              fill=(150, 60, 60), width=max(1, int(3 * s)))

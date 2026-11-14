@@ -88,10 +88,12 @@ def draw_caption(d, w, h, line):
     lines = wrapped.count("\n") + 1
     box_h = (46 if portrait else 40) * SS * lines + 40 * SS
     margin = (40 if portrait else 60) * SS
-    bottom = (170 if portrait else 30) * SS  # keep clear of the buttons on Shorts and TikTok
-    d.rounded_rectangle([margin, h - box_h - bottom, w - margin, h - bottom],
+    # vertical video: the caption sits in the middle band, between the objects and the characters,
+    # clear of the buttons on Shorts and TikTok
+    centre = h * 0.60 if portrait else h - 30 * SS - box_h / 2
+    d.rounded_rectangle([margin, centre - box_h / 2, w - margin, centre + box_h / 2],
                         radius=28 * SS, fill=(255, 255, 255))
-    d.multiline_text((w / 2, h - bottom - box_h / 2), wrapped, font=cf,
+    d.multiline_text((w / 2, centre), wrapped, font=cf,
                      fill=(60, 60, 90), anchor="mm", align="center")
 
 
