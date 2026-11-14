@@ -26,15 +26,6 @@ SR = tts.SR
 PAUSE = 0.6  # seconds of breathing room after each line
 
 
-def make_vertical(src, dst):
-    """9:16 copy for TikTok: the video centered on a sky-blue top and green bottom."""
-    graph = ("color=c=0x8fd0f8:s=1080x1920,drawbox=y=1100:w=1080:h=820:color=0x78c86e:t=fill[bg];"
-             "[0:v]scale=1080:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2:shortest=1,format=yuv420p")
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src),
-                    "-filter_complex", graph, "-c:v", "libx264", "-preset", "veryfast",
-                    "-c:a", "copy", str(dst)], check=True)
-
-
 def render_episode(lesson, clips, durations, out):
     """Mix the audio, draw the frames and write one episode's files into out/."""
     out.mkdir(parents=True, exist_ok=True)
@@ -51,6 +42,7 @@ def render_episode(lesson, clips, durations, out):
         "ffmpeg", "-y", "-loglevel", "error",
         "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{render.W}x{render.H}",
         "-r", str(FPS), "-i", "-", "-i", str(wav),
+        "-vf", "scale=1080:1920:flags=lanczos",  # drawn at 720x1280, saved at full 1080x1920
         "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "160k", "-shortest", str(mp4),
     ]
@@ -63,14 +55,13 @@ def render_episode(lesson, clips, durations, out):
     if proc.wait() != 0:
         raise SystemExit("ffmpeg failed")
 
-    # automatic titles, descriptions and hashtags, plus the vertical TikTok version
+    # automatic titles, descriptions and hashtags
     write_metadata(lesson, out)
     try:
         branding.thumbnail(lesson).save(out / "thumbnail.png", optimize=True)
     except StopIteration:  # a hand-written lesson with no kids: no thumbnail
         print("No kids in this lesson, so no thumbnail was made.")
-    make_vertical(mp4, out / "video_vertical.mp4")
-    print(f"Done: {mp4} and video_vertical.mp4 ({sum(durations):.1f}s)")
+    print(f"Done: {mp4} ({sum(durations):.1f}s, vertical 1080x1920)")
 
 
 def main():

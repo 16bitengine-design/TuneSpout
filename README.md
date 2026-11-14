@@ -20,7 +20,7 @@ python src/make_video.py out/lesson.json
 python src/make_video.py out/lesson.json --fake-tts
 python -m pytest tests                 # checks safety, math and drawing
 ```
-Result in `out/`: `video.mp4` (YouTube), `thumbnail.png`, `video_vertical.mp4` (TikTok), `meta.json` (YouTube title, description, tags) and `tiktok.json` (caption with hashtags).
+Result in `out/`: `video.mp4` (vertical 1080x1920, for YouTube Shorts and TikTok), `thumbnail.png`, `meta.json` (YouTube title, description, tags) and `tiktok.json` (caption with hashtags).
 
 ## Put it on GitHub and automate it
 Posting goes through **Buffer**, so you never deal with YouTube or TikTok developer approval. Add these under Repo Settings -> Secrets and variables -> Actions. With none of them set, a run just builds the video (a practice run).
@@ -36,7 +36,7 @@ Posting goes through **Buffer**, so you never deal with YouTube or TikTok develo
 
 **Going live.** Safe defaults: YouTube posts as **private**; TikTok waits as a **draft** in Buffer. Watch a few, then set repo variables `YT_PRIVACY=public` and `TIKTOK_MODE=post`.
 
-Buffer's free plan allows 3,000 API requests per 30 days, far more than one post a day needs. Buffer publishes **YouTube Shorts only**: vertical video, up to 3 minutes. So YouTube and TikTok both get the vertical video (that is why every part stays under 3 minutes), and the 16:9 video is only kept in the run's downloadable files. Long 16:9 videos would need YouTube's own upload API. Buffer cannot set a custom YouTube thumbnail; the generated thumbnail is still saved in each run's downloadable files.
+Buffer's free plan allows 3,000 API requests per 30 days, far more than one post a day needs. Buffer publishes **YouTube Shorts only**: vertical video, up to 3 minutes. So every video is made vertical (9:16, 1080x1920) and every part stays under 3 minutes. Widescreen 16:9 videos would need YouTube's own upload API. Buffer cannot set a custom YouTube thumbnail; the generated thumbnail is still saved in each run's downloadable files.
 
 ## Episodes
 No video is longer than **3 minutes**. A lesson up to 3 minutes is one video. A longer one is cut between scenes into the fewest parts that fit, as equal in length as possible (a 7-minute lesson becomes three parts of about 2:20), titled "... (Part 1 of 3)". Each part has its own video, vertical video, description and hashtags. Each topic has its own length range (counting 1-2 minutes, division 3-6) in `TOPIC_MINUTES` in `src/generators/__init__.py`, and each day picks a length inside it. To force a length, run the workflow by hand with `minutes`, or set the repo variable `LESSON_MINUTES`. A long lesson is the same topic with new friends and new examples, one segment after another. The first part is sent to Buffer right away and the rest are scheduled one hour apart, in order. If a post fails part-way through a multi-part day, the retry sends the whole set again, so check for a duplicate part.

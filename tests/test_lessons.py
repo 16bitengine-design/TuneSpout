@@ -292,4 +292,4 @@ def test_the_safety_check_rejects_banned_words():
 
 def test_youtube_gets_the_vertical_video_because_buffer_posts_shorts_only():
     import buffer_post
-    assert buffer_post.FILES == {"youtube": "video_vertical.mp4", "tiktok": "video_vertical.mp4"}
+    assert buffer_post.FILES == {"youtube": "video.mp4", "tiktok": "video.mp4"}

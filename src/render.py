@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from characters.common import ellipse
 
-W, H = 1280, 720
+W, H = 720, 1280  # vertical (9:16): YouTube Shorts and TikTok. Saved at 1080x1920
 SS = 2  # supersampling for smooth edges
 
 FONT_PATHS = [
@@ -82,12 +82,16 @@ def draw_caption(d, w, h, line):
     """White caption box at the bottom showing the spoken line."""
     if not line:  # thumbnails have no caption
         return
-    cf = font(34 * SS)
-    wrapped = "\n".join(textwrap.wrap(line, 42))
-    box_h = 40 * SS * (wrapped.count("\n") + 1) + 40 * SS
-    d.rounded_rectangle([60 * SS, h - box_h - 30 * SS, w - 60 * SS, h - 30 * SS],
+    portrait = h > w
+    cf = font((40 if portrait else 34) * SS)
+    wrapped = "\n".join(textwrap.wrap(line, 24 if portrait else 42))
+    lines = wrapped.count("\n") + 1
+    box_h = (46 if portrait else 40) * SS * lines + 40 * SS
+    margin = (40 if portrait else 60) * SS
+    bottom = (170 if portrait else 30) * SS  # keep clear of the buttons on Shorts and TikTok
+    d.rounded_rectangle([margin, h - box_h - bottom, w - margin, h - bottom],
                         radius=28 * SS, fill=(255, 255, 255))
-    d.multiline_text((w / 2, h - 30 * SS - box_h / 2), wrapped, font=cf,
+    d.multiline_text((w / 2, h - bottom - box_h / 2), wrapped, font=cf,
                      fill=(60, 60, 90), anchor="mm", align="center")
 
 
