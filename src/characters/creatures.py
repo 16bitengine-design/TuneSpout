@@ -49,7 +49,7 @@ def new_pal(rng):
     return {"seed": seed, "name": make_name(random.Random(seed))}
 
 
-def draw_creature(d, cx, base_y, s, t, phase, g, singing=False):
+def draw_creature(d, cx, base_y, s, t, phase, g, singing=False, mouth=None):
     s *= g["scale"]
     bob = abs(math.sin(t * 3.6 + phase)) * (16 if singing else 9) * s
     y = base_y - bob
@@ -111,7 +111,7 @@ def draw_creature(d, cx, base_y, s, t, phase, g, singing=False):
             ellipse(d, bx + sx * 13 * s, by - 7 * s, 3 * s, 4 * s, (40, 30, 40))
         ellipse(d, bx + sx * 25 * s, by + 4 * s, 6 * s, 4 * s, (255, 150, 150))
     if singing:
-        open_ = abs(math.sin(t * 8 + phase))
+        open_ = abs(math.sin(t * 8 + phase)) if mouth is None else mouth
         ellipse(d, bx, by + 7 * s, 7 * s, (2 + 7 * open_) * s, (150, 45, 65))
     else:
         d.arc([bx - 10 * s, by - 2 * s, bx + 10 * s, by + 14 * s], 15, 165,

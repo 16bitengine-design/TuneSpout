@@ -26,7 +26,7 @@ def _hair_front(d, cx, cy, r, color, style):
 
 
 def draw_kid(d, cx, base_y, s, t, phase=0.0, skin=SKIN[1], hair=HAIR[0],
-             style="short", shirt=SHIRTS[0], pants=PANTS[0], cheer=False, talking=False, walking=False, point=0, lead=False):
+             style="short", shirt=SHIRTS[0], pants=PANTS[0], cheer=False, talking=False, walking=False, point=0, lead=False, mouth=None):
     """Draw a kid standing with feet at base_y. s = scale, t = time (seconds).
     Always moving: bouncing to the beat, swaying, swinging arms, stepping from foot to
     foot and blinking. walking = striding in; point = +1/-1 to point right/left; lead = gold star. cheer = big jumps with both arms up; talking = the mouth opens
@@ -96,7 +96,7 @@ def draw_kid(d, cx, base_y, s, t, phase=0.0, skin=SKIN[1], hair=HAIR[0],
     for ex in (-21, 21):
         ellipse(d, hx0 + ex * s, cy + 17 * s, 6 * s, 4 * s, (255, 150, 150))
     if talking:  # mouth opens and closes while the lesson is spoken
-        open_ = abs(math.sin(t * 9 + phase * 2))
+        open_ = abs(math.sin(t * 9 + phase * 2)) if mouth is None else mouth  # mouth = real audio level
         mh = (2.5 + 8 * open_) * s
         ellipse(d, hx0, cy + 18 * s, 8 * s, mh, (150, 45, 65))
         if open_ > 0.55:

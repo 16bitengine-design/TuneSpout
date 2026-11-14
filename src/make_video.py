@@ -19,12 +19,28 @@ import render
 import tts
 import branding
 from characters.cast import voice_for
+from kids_scene import plan_positions
 from metadata import write_metadata
 from safety import check_lesson
 
 FPS = 24
 SR = tts.SR
-PAUSE = 0.6  # seconds of breathing room after each line
+PAUSE = 0.6
+
+
+def mouth_envelope(audio):
+    """Mouth openness (0..1) for each video frame of a line, from its loudness, so the
+    lips open on the sounds and close in the gaps. Empty for silent (test) audio."""
+    hop = SR // FPS
+    n = len(audio) // hop
+    if n == 0:
+        return []
+    rms = np.sqrt(np.mean(audio[: n * hop].reshape(n, hop) ** 2, axis=1))
+    if rms.max() < 1e-4:
+        return []
+    level = np.clip(rms / (np.percentile(rms, 90) + 1e-9), 0, 1) ** 0.8
+    level[level < 0.12] = 0.0
+    return [float(x) for x in np.convolve(level, [0.25, 0.5, 0.25], mode="same")]  # seconds of breathing room after each line
 
 
 def render_episode(lesson, clips, durations, out):
@@ -84,9 +100,14 @@ def main():
                                (lesson.get("voice", "af_heart"), lesson.get("speed", 0.9),
                                 lesson.get("pitch", 1.2)))
         a = tts.speak(sc["line"], voice, speed, pitch, fake=args.fake_tts)
+        env = mouth_envelope(a)
+        if env:
+            sc["_env"] = env  # the mouths follow the real audio
         a = np.concatenate([a, np.zeros(int(PAUSE * SR), dtype=np.float32)])
         clips.append(a)
         durations.append(len(a) / SR)
+
+    plan_positions(lesson["scenes"])  # who stands where, so the kids walk around
 
     # one video, or (over three minutes) episodes of about two minutes each
     ranges = episodes.split(durations)
