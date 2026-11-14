@@ -34,7 +34,7 @@ Posting goes through **Buffer**, so you never deal with YouTube or TikTok develo
 **Cloudinary** (Buffer only accepts a public link to a video, so each video is put here first; it is deleted after 7 days)
 1. Make a free account. Add secrets `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
 
-**Going live.** Safe defaults: YouTube posts as **private**; TikTok waits as a **draft** in Buffer. Watch a few, then set repo variables `YT_PRIVACY=public` and `TIKTOK_MODE=post`.
+**Going live.** Videos are published automatically: YouTube as **public**, TikTok posted straight away. To hold them back, set repo variables `YT_PRIVACY=private` and `TIKTOK_MODE=draft`.
 
 Buffer's free plan allows 3,000 API requests per 30 days, far more than one post a day needs. Buffer publishes **YouTube Shorts only**: vertical video, up to 3 minutes. So every video is made vertical (9:16, 1080x1920) and every part stays under 3 minutes. Widescreen 16:9 videos would need YouTube's own upload API. Buffer cannot set a custom YouTube thumbnail; the generated thumbnail is still saved in each run's downloadable files.
 

@@ -8,8 +8,8 @@ Cloudinary (free tier). Writes out/result_<platform>.json for the daily record.
 
 Secrets: BUFFER_API_KEY (the channels are found automatically; to pin one, also set
 BUFFER_YOUTUBE_CHANNEL_ID / BUFFER_TIKTOK_CHANNEL_ID), CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.
-Settings (repo Variables): YT_PRIVACY (private|unlisted|public, default private),
-TIKTOK_MODE (draft|post, default draft).
+Settings (repo Variables): YT_PRIVACY (private|unlisted|public, default public),
+TIKTOK_MODE (draft|post, default post).
 """
 import datetime
 import hashlib
@@ -87,14 +87,14 @@ def build_input(platform, meta, url, env=os.environ, episode=0, channel_id=None)
             "title": meta["title"][:100],
             "categoryId": "27",  # Education
             "madeForKids": True,  # required for kids content (COPPA)
-            "privacy": env.get("PRIVACY") or "private",
+            "privacy": env.get("PRIVACY") or "public",
             "isAiGenerated": True,
             "notifySubscribers": False,
         }}
     else:
         body["text"] = meta["caption"]
         body["metadata"] = {"tiktok": {"isAiGenerated": meta.get("is_aigc", True)}}
-        if (env.get("TIKTOK_MODE") or "draft") != "post":
+        if (env.get("TIKTOK_MODE") or "post") != "post":
             body["saveToDraft"] = True  # review in Buffer, then publish by hand
     if episode and not body.get("saveToDraft"):
         due = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=GAP_MINUTES * episode)

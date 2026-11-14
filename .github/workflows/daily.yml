@@ -97,7 +97,7 @@ jobs:
         if: steps.status.outputs.youtube == 'todo'
         continue-on-error: true   # a YouTube problem must not stop TikTok
         env:
-          PRIVACY: ${{ vars.YT_PRIVACY || 'private' }}   # set the repo variable YT_PRIVACY to public to go live
+          PRIVACY: ${{ vars.YT_PRIVACY || 'public' }}   # set the repo variable YT_PRIVACY to private to hold videos back
         run: python src/buffer_post.py youtube out
       - name: Record YouTube
         if: steps.status.outputs.youtube == 'todo'
@@ -107,7 +107,7 @@ jobs:
         if: steps.status.outputs.tiktok == 'todo'
         continue-on-error: true
         env:
-          TIKTOK_MODE: ${{ vars.TIKTOK_MODE || 'draft' }}   # draft = waits in Buffer for you; set to post to go live
+          TIKTOK_MODE: ${{ vars.TIKTOK_MODE || 'post' }}   # post = goes live; set to draft to review in Buffer first
         run: python src/buffer_post.py tiktok out
       - name: Record TikTok
         if: steps.status.outputs.tiktok == 'todo'

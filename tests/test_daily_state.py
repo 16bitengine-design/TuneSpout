@@ -94,21 +94,21 @@ def test_status_leaves_a_heartbeat_so_github_keeps_the_schedule_on(day, monkeypa
 META = {"title": "Count to 10!", "description": "Sing along", "caption": "Count! #kids", "is_aigc": True}
 
 
-def test_youtube_post_is_made_for_kids_private_and_labelled_ai(monkeypatch):
+def test_youtube_post_is_made_for_kids_public_and_labelled_ai(monkeypatch):
     env = {"BUFFER_YOUTUBE_CHANNEL_ID": "c1"}
     body = buffer_post.build_input("youtube", META, "https://x/v.mp4", env)
     yt = body["metadata"]["youtube"]
-    assert yt["madeForKids"] is True and yt["privacy"] == "private" and yt["isAiGenerated"] is True
+    assert yt["madeForKids"] is True and yt["privacy"] == "public" and yt["isAiGenerated"] is True
     assert yt["categoryId"] == "27" and body["channelId"] == "c1"
     assert body["assets"] == [{"video": {"url": "https://x/v.mp4"}}]
-    assert buffer_post.build_input("youtube", META, "u", {**env, "PRIVACY": "public"})["metadata"]["youtube"]["privacy"] == "public"
+    assert buffer_post.build_input("youtube", META, "u", {**env, "PRIVACY": "private"})["metadata"]["youtube"]["privacy"] == "private"
 
 
-def test_tiktok_waits_as_a_draft_until_you_switch_it_on():
+def test_tiktok_posts_unless_set_to_draft():
     env = {"BUFFER_TIKTOK_CHANNEL_ID": "c2"}
     body = buffer_post.build_input("tiktok", META, "u", env)
-    assert body["saveToDraft"] is True and body["metadata"]["tiktok"]["isAiGenerated"] is True
-    assert "saveToDraft" not in buffer_post.build_input("tiktok", META, "u", {**env, "TIKTOK_MODE": "post"})
+    assert "saveToDraft" not in body and body["metadata"]["tiktok"]["isAiGenerated"] is True
+    assert buffer_post.build_input("tiktok", META, "u", {**env, "TIKTOK_MODE": "draft"})["saveToDraft"] is True
 
 
 def test_buffer_errors_are_not_mistaken_for_success(monkeypatch):
