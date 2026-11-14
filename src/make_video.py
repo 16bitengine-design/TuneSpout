@@ -18,6 +18,7 @@ import music
 import render
 import tts
 import branding
+from characters.cast import voice_for
 from metadata import write_metadata
 from safety import check_lesson
 
@@ -79,9 +80,10 @@ def main():
     # voice for each scene; scene length = length of its audio
     clips, durations = [], []
     for sc in lesson["scenes"]:
-        a = tts.speak(sc["line"], lesson.get("voice", "af_heart"),
-                      lesson.get("speed", 0.9), lesson.get("pitch", 1.2),
-                      fake=args.fake_tts)
+        voice, speed, pitch = (voice_for(sc.get("speaker")) or
+                               (lesson.get("voice", "af_heart"), lesson.get("speed", 0.9),
+                                lesson.get("pitch", 1.2)))
+        a = tts.speak(sc["line"], voice, speed, pitch, fake=args.fake_tts)
         a = np.concatenate([a, np.zeros(int(PAUSE * SR), dtype=np.float32)])
         clips.append(a)
         durations.append(len(a) / SR)

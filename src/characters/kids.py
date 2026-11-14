@@ -26,14 +26,16 @@ def _hair_front(d, cx, cy, r, color, style):
 
 
 def draw_kid(d, cx, base_y, s, t, phase=0.0, skin=SKIN[1], hair=HAIR[0],
-             style="short", shirt=SHIRTS[0], pants=PANTS[0], cheer=False, talking=False):
+             style="short", shirt=SHIRTS[0], pants=PANTS[0], cheer=False, talking=False, walking=False, point=0, lead=False):
     """Draw a kid standing with feet at base_y. s = scale, t = time (seconds).
     Always moving: bouncing to the beat, swaying, swinging arms, stepping from foot to
-    foot and blinking. cheer = big jumps with both arms up; talking = the mouth opens
+    foot and blinking. walking = striding in; point = +1/-1 to point right/left; lead = gold star. cheer = big jumps with both arms up; talking = the mouth opens
     and closes."""
     beat = t * 3.4 + phase
-    hop = abs(math.sin(beat)) * (22 if cheer else 7) * s
-    sway = math.sin(t * 1.8 + phase) * 6 * s
+    if walking:
+        beat = t * 7.0
+    hop = abs(math.sin(beat)) * (22 if cheer else (5 if walking else 7)) * s
+    sway = math.sin(t * 1.8 + phase) * (2 if walking else 6) * s
     y = base_y - hop
 
     r = 34 * s
@@ -46,7 +48,7 @@ def draw_kid(d, cx, base_y, s, t, phase=0.0, skin=SKIN[1], hair=HAIR[0],
 
     # legs and shoes: the feet take turns lifting
     for dx, turn in ((-14, 0.0), (14, math.pi)):
-        lift = max(0.0, math.sin(beat * 2 + turn)) * (4 if cheer else 9) * s
+        lift = max(0.0, math.sin(beat * (1 if walking else 2) + turn)) * (4 if cheer else (14 if walking else 9)) * s
         d.rounded_rectangle([bx + dx * s - 9 * s, y - 45 * s, bx + dx * s + 9 * s, y - lift],
                             radius=int(6 * s), fill=pants)
         ellipse(d, bx + dx * s + 3 * s, y - lift, 13 * s, 7 * s, (60, 50, 50))
@@ -59,7 +61,10 @@ def draw_kid(d, cx, base_y, s, t, phase=0.0, skin=SKIN[1], hair=HAIR[0],
     sh_y = body_top + 14 * s
     for side in (-1, 1):
         sx = bx + side * 30 * s
-        if side == 1 or cheer:
+        if point and side == point:  # pointing at the things, with a small nod
+            a = math.radians((-18 if point == 1 else 198) + 6 * math.sin(t * 5))
+            hx, hy = sx + 64 * s * math.cos(a), sh_y + 64 * s * math.sin(a)
+        elif side == 1 or cheer:
             a = math.radians(-50 + 34 * math.sin(t * 6 + phase + side))
             if side == -1:
                 a = math.radians(180 + 50 - 34 * math.sin(t * 6 + phase))
@@ -73,6 +78,12 @@ def draw_kid(d, cx, base_y, s, t, phase=0.0, skin=SKIN[1], hair=HAIR[0],
     # head and hair
     ellipse(d, hx0, cy, r, r, skin)
     _hair_front(d, hx0, cy, r, hair, style)
+
+    if lead:  # a gold star marks today's lead
+        sx0, sy0, sr = hx0, cy - r * 1.95 + math.sin(t * 3) * 3 * s, 15 * s
+        pts = [(sx0 + (sr if i % 2 == 0 else sr * 0.45) * math.sin(i * math.pi / 5),
+                sy0 - (sr if i % 2 == 0 else sr * 0.45) * math.cos(i * math.pi / 5)) for i in range(10)]
+        d.polygon(pts, fill=(255, 205, 40), outline=(220, 150, 20))
 
     # face: eyes blink every few seconds
     blink = (t + phase * 0.7) % 3.3 < 0.14

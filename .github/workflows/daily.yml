@@ -14,7 +14,7 @@ on:
         description: "Lesson topic (auto rotates through all of them)"
         type: choice
         default: auto
-        options: [auto, counting, addition, subtraction, multiplication, division, plurals, sports, teamscore, fairplay]
+        options: [auto, counting, addition, subtraction, multiplication, division, plurals, sports, teamscore, fairplay, animalsounds, babyanimals, phonics, spelling, planning, kindwords, findingout, leadership, reporting]
       minutes:
         description: "Lesson length in minutes, or auto (each topic has its own range). Over 3 minutes is cut into parts."
         type: string

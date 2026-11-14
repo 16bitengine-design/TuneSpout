@@ -24,7 +24,7 @@ KID_X_TALL = {1: [0.27], 2: [0.21, 0.79]}  # the same, for the vertical video
 
 
 def _clean_kid(kid):
-    out = {k: v for k, v in kid.items() if k != "name"}
+    out = {k: v for k, v in kid.items() if k not in ("name", "voice")}
     for key in COLOR_KEYS:
         if key in out:
             out[key] = tuple(out[key])
@@ -51,9 +51,25 @@ def draw_kids_scene(scene, t, size=(render.W, render.H)):
     kids = scene.get("kids", [])
     table = KID_X_TALL if tall else KID_X
     xs = table.get(len(kids), [(i + 1) / (len(kids) + 1) for i in range(len(kids))])
+    speaker = scene.get("speaker")
+    enter = 1.6  # seconds the cast takes to walk in during the first scene
+    walk = bool(scene.get("enter")) and t < enter
+    ease = 1 - (1 - min(1.0, t / enter)) ** 2 if scene.get("enter") else 1.0
     for i, (kid, fx) in enumerate(zip(kids, xs)):
-        draw_kid(d, w * fx, h * ground, SS * (1.6 if tall else 1.2), t, phase=i * 1.3,
-                 cheer=sing, talking=bool(scene.get("line")), **_clean_kid(kid))
+        is_speaker = (speaker is None and bool(scene.get("line"))) or kid.get("name") == speaker
+        x, scale = fx, 1.6 if tall else 1.2
+        if is_speaker and speaker is not None:  # the one who talks steps forward a little
+            step = min(1.0, t / 0.4)
+            x += (0.5 - fx) * 0.16 * step
+            scale *= 1 + 0.07 * step
+        if walk:  # kids walk in from the sides of the screen
+            x = (-0.15 if fx < 0.5 else 1.15) + (x - (-0.15 if fx < 0.5 else 1.15)) * ease
+        pointing = (1 if fx < 0.5 else -1) if (is_speaker and speaker is not None and scene.get("items")
+                                                and not walk) else 0
+        draw_kid(d, w * x, h * ground, SS * scale, t, phase=i * 1.3,
+                 cheer=sing, talking=is_speaker and bool(scene.get("line")),
+                 walking=walk, point=pointing, lead=kid.get("name") == scene.get("lead"),
+                 **_clean_kid(kid))
 
     # the animal friends stand between the kids
     pals = scene.get("pals", [])
@@ -62,8 +78,12 @@ def draw_kids_scene(scene, t, size=(render.W, render.H)):
     else:
         pal_x = [0.28, 0.86] if len(kids) == 1 else [0.30, 0.70]
     for i, pal in enumerate(pals):
-        draw_creature(d, w * (pal_x[i] if i < 2 else 0.5), h * (ground + 0.01 if tall else ground),
-                      SS * (1.35 if tall else 1.0), t, i * 0.8, pal_genome(pal), singing=sing)
+        px = pal_x[i] if i < 2 else 0.5
+        if walk:  # the pals bound in from the right
+            px = 1.2 + (px - 1.2) * ease
+        talks = bool(scene.get("line")) and pal.get("name") == speaker
+        draw_creature(d, w * px, h * (ground + 0.01 if tall else ground),
+                      SS * (1.35 if tall else 1.0), t, i * 0.8, pal_genome(pal), singing=sing or talks)
 
     items = scene.get("items")
     if items:

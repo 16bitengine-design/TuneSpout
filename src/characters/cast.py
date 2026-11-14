@@ -7,21 +7,21 @@ be swapped freely. To change the cast, edit this file only.
 """
 CAST_KIDS = [
     {"name": "Amina", "skin": (141, 85, 36), "hair": (30, 25, 25), "style": "bun",
-     "shirt": (255, 105, 135), "pants": (70, 90, 160)},
+     "shirt": (255, 105, 135), "pants": (70, 90, 160), "voice": ("af_heart", 0.92, 1.22)},
     {"name": "Jomo", "skin": (241, 194, 125), "hair": (140, 80, 40), "style": "short",
-     "shirt": (80, 170, 230), "pants": (90, 90, 110)},
+     "shirt": (80, 170, 230), "pants": (90, 90, 110), "voice": ("am_puck", 0.95, 1.28)},
     {"name": "Mei", "skin": (255, 224, 189), "hair": (30, 25, 25), "style": "long",
-     "shirt": (120, 200, 110), "pants": (60, 120, 100)},
+     "shirt": (120, 200, 110), "pants": (60, 120, 100), "voice": ("af_nova", 0.92, 1.25)},
     {"name": "Kofi", "skin": (94, 56, 28), "hair": (30, 25, 25), "style": "curly",
-     "shirt": (255, 170, 60), "pants": (70, 90, 160)},
+     "shirt": (255, 170, 60), "pants": (70, 90, 160), "voice": ("am_liam", 0.95, 1.3)},
 ]
 
 # Two friendly animal pals who join every lesson.
 CAST_ANIMALS = {
     "yumbi": {"name": "Yumbi", "body": (255, 225, 130), "ears": "round", "tail": "puff",
-            "pattern": "spots", "scale": 1.0, "tall": 1.0},
+            "pattern": "spots", "scale": 1.0, "tall": 1.0, "voice": ("af_sky", 0.95, 1.5)},
     "lumbo": {"name": "Lumbo", "body": (170, 210, 255), "ears": "floppy", "tail": "curl",
-           "pattern": "none", "scale": 1.05, "tall": 1.1},
+           "pattern": "none", "scale": 1.05, "tall": 1.1, "voice": ("am_echo", 0.92, 1.4)},
 }
 
 
@@ -67,3 +67,12 @@ def pal_genome(pal):
     """Drawing recipe for any pal in a lesson: a cast animal or an invented one."""
     from characters.creatures import genome
     return animal_genome(pal["cast"]) if "cast" in pal else genome(pal["seed"])
+
+
+def voice_for(name):
+    """(kokoro voice, speed, pitch) for a cast member by name, or None for anyone else.
+    Every main character has their own voice, so viewers learn who is talking."""
+    for who in list(CAST_KIDS) + list(CAST_ANIMALS.values()):
+        if who["name"] == name:
+            return who["voice"]
+    return None

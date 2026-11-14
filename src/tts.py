@@ -39,7 +39,15 @@ def speak(text: str, voice: str = "af_heart", speed: float = 0.9,
     pipe = _get_pipe()
     chunks = []
     # slow down by `speed`, and pre-compensate for the pitch resample
-    for _, _, audio in pipe(text, voice=voice, speed=speed / pitch):
-        chunks.append(np.asarray(audio, dtype=np.float32))
+    try:
+        for _, _, audio in pipe(text, voice=voice, speed=speed / pitch):
+            chunks.append(np.asarray(audio, dtype=np.float32))
+    except Exception as err:  # a voice that cannot be loaded must never stop the video
+        if voice == "af_heart":
+            raise
+        print(f"Voice {voice} unavailable ({err}); using af_heart instead.")
+        chunks = []
+        for _, _, audio in pipe(text, voice="af_heart", speed=speed / pitch):
+            chunks.append(np.asarray(audio, dtype=np.float32))
     audio = np.concatenate(chunks) if chunks else np.zeros(SR, dtype=np.float32)
     return _pitch_up(audio, pitch)

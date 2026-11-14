@@ -142,7 +142,7 @@ def _finish(img, w, h, rgb=True):
 
 
 # the channel art shows the real cast (order: Amina, Jomo, Kofi on the hills, Mei)
-BRAND_KIDS = [{k: v for k, v in CAST_KIDS[i].items() if k != "name"} for i in (0, 1, 3, 2)]
+BRAND_KIDS = [{k: v for k, v in CAST_KIDS[i].items() if k not in ("name", "voice")} for i in (0, 1, 3, 2)]
 
 
 def _sparkle_notes(d, spots):
@@ -214,7 +214,7 @@ def cast_sheet(w=1920, h=1080):
     xs = [0.09 + 0.15 * i for i in range(6)]
     for fx, kid in zip(xs, CAST_KIDS):
         draw_kid(d, fx * w * K, 800 * K, 2.6 * K, 0.5, fx * 9, cheer=False,
-                 **{k: v for k, v in kid.items() if k != "name"})
+                 **{k: v for k, v in kid.items() if k not in ("name", "voice")})
         pill(d, fx * w * K, 900 * K, kid["name"], 54 * K)
     for fx, (key, animal) in zip(xs[4:], CAST_ANIMALS.items()):
         draw_creature(d, fx * w * K, 790 * K, 3.0 * K, 0.5, fx * 9, pal_genome({"cast": key}))

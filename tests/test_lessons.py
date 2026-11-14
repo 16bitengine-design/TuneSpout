@@ -293,3 +293,22 @@ def test_the_safety_check_rejects_banned_words():
 def test_youtube_gets_the_vertical_video_because_buffer_posts_shorts_only():
     import buffer_post
     assert buffer_post.FILES == {"youtube": "video.mp4", "tiktok": "video.mp4"}
+
+
+def test_every_character_has_own_voice_and_lessons_have_a_lead():
+    from characters.cast import CAST_ANIMALS, CAST_KIDS, voice_for
+    voices = [voice_for(k["name"]) for k in CAST_KIDS] + [voice_for(a["name"]) for a in CAST_ANIMALS.values()]
+    assert all(voices) and len({v[0] for v in voices}) == len(voices)
+    assert voice_for("Nobody") is None
+    for topic in GENERATORS:
+        les = generate(topic, 3)
+        scenes = les["scenes"]
+        lead = scenes[0]["kids"][0]["name"]
+        assert all(sc["lead"] == lead for sc in scenes)
+        speakers = {sc["speaker"] for sc in scenes}
+        assert lead in speakers
+        names = {k["name"] for k in scenes[0]["kids"]} | {p["name"] for p in scenes[0]["pals"]}
+        assert speakers <= names
+        if len(scenes[0]["kids"]) > 1:  # the lead shares the teaching with the friend
+            assert scenes[0]["kids"][1]["name"] in speakers
+        assert any(p["name"] in speakers for p in scenes[0]["pals"])
