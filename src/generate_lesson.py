@@ -9,6 +9,7 @@ so every day gets a different, repeatable lesson.
 import argparse
 import datetime
 import json
+import os
 from pathlib import Path
 
 from generators import TOPICS, estimate_seconds, generate, generate_long, target_minutes
@@ -26,8 +27,9 @@ def main():
     args = ap.parse_args()
 
     today = datetime.date.today()
-    seed = args.seed if args.seed is not None else int(today.strftime("%Y%m%d"))
-    topic = TOPICS[today.toordinal() % len(TOPICS)] if args.topic == "auto" else args.topic
+    slot = int(os.environ.get("SLOT") or 1)  # two videos a day: each gets its own topic and seed
+    seed = args.seed if args.seed is not None else int(today.strftime("%Y%m%d")) * 10 + slot
+    topic = TOPICS[(today.toordinal() * 2 + slot - 1) % len(TOPICS)] if args.topic == "auto" else args.topic
 
     minutes = target_minutes(topic, seed) if args.minutes in ("auto", "") else float(args.minutes)
     lesson = generate_long(topic, seed, minutes)

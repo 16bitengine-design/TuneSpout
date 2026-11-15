@@ -127,7 +127,7 @@ def main(platform, out_dir="out"):
     for number, folder in enumerate(folders):
         ep = out / folder
         meta = json.loads((ep / ("meta.json" if platform == "youtube" else "tiktok.json")).read_text())
-        url = cloudinary_upload(ep / FILES[platform], f"tunespout/{day}-{platform}-{number + 1}")
+        url = cloudinary_upload(ep / FILES[platform], f"tunespout/{day}-v{os.environ.get('SLOT') or 1}-{platform}-{number + 1}")
         body = build_input(platform, meta, url, episode=number, channel_id=channel_id)
         ids.append(create_post(body))
         saved_as = "draft" if body.get("saveToDraft") else "posted"

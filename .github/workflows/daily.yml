@@ -1,13 +1,16 @@
 name: Make and post a lesson video
 
-# Two runs a day. The first does the work. The backup only does something if the
-# first one was delayed, dropped or failed, because GitHub can skip scheduled
+# Two videos a day on each platform. Video 1 is made at 06:17 UTC and video 2 at 13:17 UTC.
+# Each has a backup run (10:43 and 17:43) that only does something if the main run was
+# delayed, dropped or failed, because GitHub can skip scheduled
 # runs when it is busy. A record in the `state` branch stops any double posting.
 # Odd minutes avoid the top of the hour, when GitHub is busiest.
 on:
   schedule:
-    - cron: "17 6 * * *"    # main run (06:17 UTC)
-    - cron: "43 12 * * *"   # backup run
+    - cron: "17 6 * * *"    # video 1, main run (06:17 UTC)
+    - cron: "43 10 * * *"   # video 1, backup (does nothing if video 1 is already posted)
+    - cron: "17 13 * * *"   # video 2, main run
+    - cron: "43 17 * * *"   # video 2, backup
   workflow_dispatch:
     inputs:
       topic:
@@ -57,7 +60,15 @@ jobs:
         id: status
         run: |
           echo "DAY=$(date -u +%F)" >> "$GITHUB_ENV"
-          DAY=$(date -u +%F) python3 src/state.py status ${{ inputs.force && '--force' || '' }}
+          # scheduled runs know which of the two daily videos they make; a hand-started run
+          # makes the first one still missing today
+          case "${{ github.event.schedule }}" in
+            "17 6 * * *"|"43 10 * * *") export SLOT=1 ;;
+            "17 13 * * *"|"43 17 * * *") export SLOT=2 ;;
+          esac
+          export DAY=$(date -u +%F)
+          python3 src/state.py status ${{ inputs.force && '--force' || '' }} | tee /tmp/status.txt
+          echo "SLOT=$(grep '^slot=' /tmp/status.txt | cut -d= -f2)" >> "$GITHUB_ENV"
 
       # Everything below is skipped when today's video is already posted
       - uses: actions/setup-python@v5
@@ -131,5 +142,5 @@ jobs:
             gh issue comment "$OPEN" --body "Failed again on $DAY: $RUN"
           else
             gh issue create --title "Daily post failed" \
-              --body "The daily video did not post on $DAY. Details: $RUN. The backup run tries again later today. Open the run to see which step failed."
+              --body "The daily video did not post on $DAY. Details: $RUN. A backup run tries again later today. Open the run to see which step failed."
           fi

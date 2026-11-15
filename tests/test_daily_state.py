@@ -1,5 +1,6 @@
 """The daily record: no double posts, backup run catches up, tokens stay safe."""
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -18,6 +19,7 @@ def day(tmp_path, monkeypatch):
     monkeypatch.setenv("STATE_DIR", str(tmp_path / "state"))
     monkeypatch.setenv("DAY", "2026-11-12")
     monkeypatch.setenv("LESSON_FILE", str(tmp_path / "lesson.json"))
+    monkeypatch.setenv("SLOT", "1")  # scheduled runs always know which video they make
     for k in ("BUFFER_API_KEY", "BUFFER_YOUTUBE_CHANNEL_ID", "BUFFER_TIKTOK_CHANNEL_ID"):
         monkeypatch.delenv(k, raising=False)
     (tmp_path / "lesson.json").write_text(json.dumps({"title": "Add!", "topic": "addition"}))
@@ -136,7 +138,7 @@ def test_buffer_errors_are_not_mistaken_for_success(monkeypatch):
 def test_workflow_has_backup_run_and_safety_settings():
     wf = yaml.safe_load((ROOT / ".github/workflows/daily.yml").read_text())
     crons = [c["cron"] for c in wf[True]["schedule"]]  # PyYAML reads the key `on` as True
-    assert len(crons) == 2
+    assert len(crons) == 4  # two videos a day, each with a main and a backup run
     assert all(not c.startswith("0 ") for c in crons), "avoid the busy top of the hour"
     assert wf["concurrency"]["cancel-in-progress"] is False
     assert wf["permissions"] == {"contents": "write", "issues": "write"}
@@ -216,3 +218,33 @@ def test_a_failed_channel_lookup_means_nothing_is_posted_not_a_crash(monkeypatch
     def broken(query):
         raise RuntimeError("down")
     assert buffer_channels.channel_ids({"BUFFER_API_KEY": "k"}, broken) == {}
+
+
+def test_two_videos_a_day_each_platform(day, monkeypatch):
+    _connect(monkeypatch, "youtube")
+    _connect(monkeypatch, "tiktok")
+    monkeypatch.delenv("SLOT")  # a hand-started run picks the first video still missing
+    assert state.status()["slot"] == 1
+    for p in ("youtube", "tiktok"):
+        state.record(p, _result(day, p + ".json"))
+    assert state.status()["slot"] == 2 and state.status()["youtube"] == "todo"
+    for p in ("youtube", "tiktok"):
+        state.record(p, _result(day, p + ".json"))
+    data = state.load()
+    assert {"youtube", "tiktok"} <= set(data["2026-11-12"]) and {"youtube", "tiktok"} <= set(data["2026-11-12#2"])
+    assert state.status()["pending"] == "false"  # both videos are out
+    # a scheduled backup run for video 1 sees it is done
+    monkeypatch.setenv("SLOT", "1")
+    assert state.status()["pending"] == "false"
+
+
+def test_the_two_daily_videos_have_different_topics(monkeypatch):
+    import subprocess, sys, tempfile
+    topics = []
+    for n in ("1", "2"):
+        out = tempfile.mktemp(suffix=".json")
+        env = {**os.environ, "SLOT": n, "PYTHONPATH": str(ROOT / "src")}
+        subprocess.run([sys.executable, str(ROOT / "src/generate_lesson.py"), "--out", out], check=True, env=env,
+                       capture_output=True)
+        topics.append(json.loads(Path(out).read_text())["topic"])
+    assert topics[0] != topics[1]

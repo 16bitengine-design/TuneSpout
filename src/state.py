@@ -3,6 +3,7 @@ missed run is caught up by the backup run. Only uses the standard library.
 
 The record lives in the `state` branch (checked out into ./state by the
 workflow) as state/posted.json:
+  Two videos a day: video 1 is stored under the date, video 2 under "date#2".
   {"2026-11-12": {"title": "...", "youtube": {...}, "tiktok": {...}}, "_last_run": "2026-11-12"}
 
   python src/state.py status [--force]   decide what is still to do today
@@ -29,6 +30,26 @@ def today():
     return os.environ.get("DAY") or datetime.datetime.now(datetime.timezone.utc).date().isoformat()
 
 
+SLOTS = 2  # videos per platform per day
+
+
+_picked = None  # the video a hand-started run chose for itself
+
+
+def slot():
+    """Which of today's videos this run makes: 1 (morning) or 2 (afternoon)."""
+    try:
+        return min(SLOTS, max(1, int(os.environ.get("SLOT") or _picked or 1)))
+    except ValueError:
+        return 1
+
+
+def key(n=None):
+    """The record key: the date for video 1, 'date#2' for video 2."""
+    n = n or slot()
+    return today() if n == 1 else f"{today()}#{n}"
+
+
 def load():
     try:
         return json.loads(_file().read_text())
@@ -38,7 +59,7 @@ def load():
 
 def save(data):
     cutoff = (datetime.date.fromisoformat(today()) - datetime.timedelta(days=KEEP_DAYS)).isoformat()
-    data = {k: v for k, v in data.items() if k.startswith("_") or k >= cutoff}  # keep the file small
+    data = {k: v for k, v in data.items() if k.startswith("_") or k[:10] >= cutoff}  # keep the file small
     _file().parent.mkdir(parents=True, exist_ok=True)
     _file().write_text(json.dumps(data, indent=2, sort_keys=True))
 
@@ -51,14 +72,20 @@ def connected():
 
 
 def status(force=False):
+    global _picked
     data = load()
-    done = data.get(today(), {})
     plats = connected()
+    _picked = None
+    if not os.environ.get("SLOT"):  # a hand-started run makes the first video still missing today
+        _picked = next((n for n in range(1, SLOTS + 1)
+                        if any(p not in data.get(key(n), {}) for p in plats)), SLOTS)
+    done = data.get(key(), {})
     result = {p: "off" if p not in plats else ("todo" if force or p not in done else "done") for p in PLATFORMS}
     # nothing connected = practice run (build and keep the files, post nowhere)
     pending = not plats or "todo" in result.values()
     result["pending"] = str(pending).lower()
     result["day"] = today()
+    result["slot"] = slot()
     if pending:  # a daily heartbeat commit keeps GitHub from switching the schedule off
         data["_last_run"] = today()
         save(data)
@@ -71,14 +98,14 @@ def record(platform, result_file):
         print(f"No result file for {platform}; nothing to record.")
         return
     data = load()
-    day = data.setdefault(today(), {})
+    day = data.setdefault(key(), {})
     day[platform] = json.loads(path.read_text())
     lesson = Path(os.environ.get("LESSON_FILE", "out/lesson.json"))
     if lesson.exists():
         info = json.loads(lesson.read_text())
         day["title"], day["topic"] = info.get("title"), info.get("topic")
     save(data)
-    print(f"Recorded {platform} for {today()}.")
+    print(f"Recorded {platform} for {key()}.")
 
 
 def merge(other_file):
@@ -97,7 +124,7 @@ def merge(other_file):
 
 
 def missing():
-    done = load().get(today(), {})
+    done = load().get(key(), {})
     return [p for p in connected() if p not in done]
 
 
@@ -132,7 +159,7 @@ def main(argv=None):
     else:
         left = missing()
         if left:
-            print(f"::error::Not posted today: {', '.join(left)}")
+            print(f"::error::Not posted for video {slot()} today: {', '.join(left)}")
             return 1
         print("Everything connected was posted today.")
     return 0
