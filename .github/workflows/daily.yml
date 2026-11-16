@@ -1,16 +1,19 @@
 name: Make and post a lesson video
 
-# Two videos a day on each platform. Video 1 is made at 06:17 UTC and video 2 at 13:17 UTC.
-# Each has a backup run (10:43 and 17:43) that only does something if the main run was
-# delayed, dropped or failed, because GitHub can skip scheduled
-# runs when it is busy. A record in the `state` branch stops any double posting.
+# Two videos a day on each platform. Video 1 is due from 06:17 UTC and video 2 from 13:17 UTC.
+# GitHub often skips or delays scheduled runs, so instead of relying on one run per video this
+# workflow wakes up every hour. Each wake-up posts any video that is due and not yet posted,
+# and does nothing otherwise (a record in the `state` branch stops any double posting).
 # Odd minutes avoid the top of the hour, when GitHub is busiest.
+# Changing this file also triggers one catch-up run, so a missed day can be fixed with a commit.
 on:
   schedule:
-    - cron: "17 6 * * *"    # video 1, main run (06:17 UTC)
-    - cron: "43 10 * * *"   # video 1, backup (does nothing if video 1 is already posted)
-    - cron: "17 13 * * *"   # video 2, main run
-    - cron: "43 17 * * *"   # video 2, backup
+    - cron: "17 6 * * *"    # video 1 on time
+    - cron: "17 13 * * *"   # video 2 on time
+    - cron: "37 * * * *"    # hourly catch-up: posts anything due that was missed
+  push:
+    branches: [main]
+    paths: [".github/workflows/daily.yml"]
   workflow_dispatch:
     inputs:
       topic:
@@ -60,11 +63,10 @@ jobs:
         id: status
         run: |
           echo "DAY=$(date -u +%F)" >> "$GITHUB_ENV"
-          # scheduled runs know which of the two daily videos they make; a hand-started run
-          # makes the first one still missing today
-          case "${{ github.event.schedule }}" in
-            "17 6 * * *"|"43 10 * * *") export SLOT=1 ;;
-            "17 13 * * *"|"43 17 * * *") export SLOT=2 ;;
+          # scheduled and push-triggered runs post whatever is due and still missing; a hand-started
+          # run makes the first video still missing today, due or not
+          case "${{ github.event_name }}" in
+            schedule|push) export CATCH_UP=1 ;;
           esac
           export DAY=$(date -u +%F)
           python3 src/state.py status ${{ inputs.force && '--force' || '' }} | tee /tmp/status.txt

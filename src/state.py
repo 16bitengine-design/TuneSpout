@@ -31,6 +31,14 @@ def today():
 
 
 SLOTS = 2  # videos per platform per day
+DUE = {1: (6, 17), 2: (13, 17)}  # UTC time from which each video is due
+
+
+def due_slots():
+    """The videos whose time has come today (NOW=ISO time lets tests set the clock)."""
+    now = os.environ.get("NOW")
+    t = datetime.datetime.fromisoformat(now) if now else datetime.datetime.now(datetime.timezone.utc)
+    return [n for n, hm in DUE.items() if (t.hour, t.minute) >= hm]
 
 
 _picked = None  # the video a hand-started run chose for itself
@@ -76,7 +84,15 @@ def status(force=False):
     data = load()
     plats = connected()
     _picked = None
-    if not os.environ.get("SLOT"):  # a hand-started run makes the first video still missing today
+    if os.environ.get("CATCH_UP") and not os.environ.get("SLOT"):
+        # scheduled wake-up: make the first video that is due and still missing, else do nothing
+        _picked = next((n for n in due_slots()
+                        if any(p not in data.get(key(n), {}) for p in plats)), None)
+        if _picked is None:
+            result = {p: "off" if p not in plats else "done" for p in PLATFORMS}
+            result.update(pending="false", day=today(), slot=slot())
+            return result
+    elif not os.environ.get("SLOT"):  # a hand-started run makes the first video still missing today
         _picked = next((n for n in range(1, SLOTS + 1)
                         if any(p not in data.get(key(n), {}) for p in plats)), SLOTS)
     done = data.get(key(), {})

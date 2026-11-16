@@ -138,7 +138,8 @@ def test_buffer_errors_are_not_mistaken_for_success(monkeypatch):
 def test_workflow_has_backup_run_and_safety_settings():
     wf = yaml.safe_load((ROOT / ".github/workflows/daily.yml").read_text())
     crons = [c["cron"] for c in wf[True]["schedule"]]  # PyYAML reads the key `on` as True
-    assert len(crons) == 4  # two videos a day, each with a main and a backup run
+    assert "37 * * * *" in crons  # hourly catch-up, because GitHub drops scheduled runs
+    assert "push" in wf[True] and "workflow_dispatch" in wf[True]
     assert all(not c.startswith("0 ") for c in crons), "avoid the busy top of the hour"
     assert wf["concurrency"]["cancel-in-progress"] is False
     assert wf["permissions"] == {"contents": "write", "issues": "write"}
@@ -248,3 +249,33 @@ def test_the_two_daily_videos_have_different_topics(monkeypatch):
                        capture_output=True)
         topics.append(json.loads(Path(out).read_text())["topic"])
     assert topics[0] != topics[1]
+
+
+def test_hourly_catch_up_posts_only_what_is_due_and_missing(day, monkeypatch):
+    _connect(monkeypatch, "youtube")
+    _connect(monkeypatch, "tiktok")
+    monkeypatch.delenv("SLOT")
+    monkeypatch.setenv("CATCH_UP", "1")
+    monkeypatch.setenv("NOW", "2026-11-12T05:37:00+00:00")  # before video 1 is due
+    assert state.status()["pending"] == "false"
+    monkeypatch.setenv("NOW", "2026-11-12T07:37:00+00:00")  # video 1 was missed
+    s = state.status()
+    assert s["pending"] == "true" and s["slot"] == 1
+    for p in ("youtube", "tiktok"):
+        state.record(p, _result(day, p + ".json"))
+    assert state.status()["pending"] == "false"  # video 2 is not due yet
+    monkeypatch.setenv("NOW", "2026-11-12T15:37:00+00:00")  # now video 2 is due
+    s = state.status()
+    assert s["pending"] == "true" and s["slot"] == 2
+    monkeypatch.setenv("SLOT", "2")
+    for p in ("youtube", "tiktok"):
+        state.record(p, _result(day, p + ".json"))
+    monkeypatch.delenv("SLOT")
+    assert state.status()["pending"] == "false"  # both out: later wake-ups do nothing
+
+
+def test_catch_up_with_nothing_connected_does_not_build_practice_videos(day, monkeypatch):
+    monkeypatch.delenv("SLOT")
+    monkeypatch.setenv("CATCH_UP", "1")
+    monkeypatch.setenv("NOW", "2026-11-12T15:37:00+00:00")
+    assert state.status()["pending"] == "false"
