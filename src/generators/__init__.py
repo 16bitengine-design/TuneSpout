@@ -30,6 +30,40 @@ GENERATORS = {
 }
 TOPICS = list(GENERATORS)
 
+# Subjects ("pillars") the channel rotates through. Each day has two videos and the two
+# are always different subjects, so no day (or week) is all one subject.
+PILLARS = {
+    "literacy": ["phonics", "spelling", "plurals"],
+    "numeracy": ["counting", "addition", "subtraction", "multiplication", "division"],
+    "animals": ["animalsounds", "babyanimals"],
+    "life_skills": ["planning", "kindwords", "findingout", "leadership", "reporting"],
+    "sports": ["sports", "teamscore", "fairplay"],
+}
+PILLAR_OF = {topic: pillar for pillar, topics in PILLARS.items() for topic in topics}
+
+# Monday..Sunday, two videos a day (video 1, video 2). Edit this table to change the rotation.
+WEEK_PLAN = [
+    ("literacy", "numeracy"),      # Mon
+    ("animals", "life_skills"),    # Tue
+    ("sports", "literacy"),        # Wed
+    ("numeracy", "animals"),       # Thu
+    ("life_skills", "sports"),     # Fri
+    ("literacy", "animals"),       # Sat
+    ("life_skills", "numeracy"),   # Sun
+]
+
+
+def pick_topic(day, slot: int = 1) -> str:
+    """The topic for a given date and video slot (1 or 2), rotating subjects every day.
+    Inside a subject the topics take turns, so nothing repeats until the subject's list is used up."""
+    plan = [p for pair in WEEK_PLAN for p in pair]
+    week = (day.toordinal() - day.weekday()) // 7
+    pos = day.weekday() * 2 + (2 if slot >= 2 else 1) - 1
+    pillar = plan[pos]
+    turn = week * plan.count(pillar) + plan[:pos].count(pillar)
+    topics = PILLARS[pillar]
+    return topics[turn % len(topics)]
+
 # How long each topic's lesson should run, in minutes: (shortest, longest).
 # Easy ideas stay short, harder ones get more examples. Anything over 3 minutes is
 # cut into parts of at most 3 minutes (see episodes.py). Edit freely; the whole
@@ -67,6 +101,9 @@ def target_minutes(topic: str, seed: int) -> float:
 def generate(topic: str, seed: int) -> dict:
     lesson = GENERATORS[topic](seed)
     lesson["topic"] = topic  # used for automatic descriptions and hashtags
+    lesson["pillar"] = PILLAR_OF[topic]  # used to theme the background of each scene
+    for scene in lesson["scenes"]:
+        scene.setdefault("pillar", lesson["pillar"])
     return lesson
 
 

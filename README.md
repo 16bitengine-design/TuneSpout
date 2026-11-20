@@ -8,7 +8,7 @@ Makes short, gentle learning videos for kids under 12. Kids are the main charact
 
 ## Topics built so far
 `counting`, `addition`, `subtraction`, `multiplication`, `division` (fair sharing), `plurals`, and sports: `sports` (names of sports), `teamscore` (adding team goals), `fairplay` (turns, sharing, cheering).
-`--topic auto` rotates through them by date. Every lesson picks different kids (varied skin tones, hair and clothes), objects, numbers and a tune.
+`--topic auto` rotates the **subject** every day (see "Daily subject rotation" below). Every lesson picks different kids (varied skin tones, hair and clothes), objects, numbers and a tune.
 
 ## Try it on your computer
 ```bash
@@ -45,6 +45,24 @@ No video is longer than **3 minutes**. A lesson up to 3 minutes is one video. A 
 
 ## Descriptions and hashtags
 `src/metadata.py` writes them from the lesson itself (topic, kids' names, age range), so nobody types captions. YouTube gets a full description with 8 hashtags and search tags. TikTok gets a short caption with 5 hashtags. Edit the topic tables in that file to change the wording. Tests check the length limits and that generated text avoids unsafe words.
+
+## Daily subject rotation
+The channel teaches many subjects, not just maths. The two daily videos are always different subjects, and every subject appears each week:
+
+| Day | Video 1 | Video 2 |
+|---|---|---|
+| Mon | literacy | numeracy |
+| Tue | animals | life skills |
+| Wed | sports | literacy |
+| Thu | numeracy | animals |
+| Fri | life skills | sports |
+| Sat | literacy | animals |
+| Sun | life skills | numeracy |
+
+Subjects (`PILLARS` in `src/generators/__init__.py`): literacy (phonics, spelling, plurals), numeracy (counting, addition, subtraction, multiplication, division), animals (animal sounds, baby animals), life skills (planning, kind words, finding out, leadership, reporting) and sports (sports, team score, fair play). Inside a subject the topics take turns, so nothing repeats until the subject's list is used up. Change the table (`WEEK_PLAN`) to change the rotation. `python -m pytest tests` checks the rotation.
+
+## Lively scenes
+`src/lively.py` adds motion to every scene: letters, numbers, leaves or hearts float in the sky to match the subject, confetti falls when the kids cheer or an answer appears, sparkles burst at the start of each scene, and the camera punches in and settles. All drawn by code.
 
 ## Add a new topic
 1. Write a function in `src/generators/` that takes a seed and returns a lesson dict (copy `addition` as a model).

@@ -14,6 +14,7 @@ import math
 
 from PIL import Image, ImageDraw
 
+import lively
 import render
 from characters.cast import pal_genome
 from characters.creatures import draw_creature
@@ -80,6 +81,7 @@ def draw_kids_scene(scene, t, size=(render.W, render.H)):
     img = Image.new("RGB", (w, h))
     d = ImageDraw.Draw(img)
     render.background(d, w, h, t, pond=False)
+    lively.decor(d, w, h, t, scene.get("pillar"))  # floating letters, numbers, leaves... for today's subject
     ground = 0.92 if tall else 0.74
     sing = bool(scene.get("cheer"))
 
@@ -209,6 +211,12 @@ def draw_kids_scene(scene, t, size=(render.W, render.H)):
                              cx + tw / 2 + 40 * SS, cy + th / 2 + 30 * SS],
                             radius=30 * SS, fill=(255, 255, 255))
         d.text((cx, cy), eq, font=f, fill=(255, 105, 135), anchor="mm")
+
+    # extra life: confetti when celebrating, a sparkle burst at the start, a camera punch-in
+    lively.confetti(d, w, h, t, on=bool(scene.get("cheer") or scene.get("equation")))
+    lively.burst(d, w, h, t)
+    img = lively.camera(img, t)
+    d = ImageDraw.Draw(img)  # the caption is drawn after the zoom so it stays steady and readable
 
     render.draw_caption(d, w, h, scene.get("line", ""))
     return img.resize(size, Image.LANCZOS)

@@ -3,7 +3,7 @@
   python src/generate_lesson.py --topic auto --out out/lesson.json
   python src/generate_lesson.py --topic addition --seed 42 --out out/lesson.json
 
-`auto` rotates through all topics by date; the seed defaults to today's date,
+`auto` rotates the subjects day by day (literacy, numeracy, animals, life skills, sports); the seed defaults to today's date,
 so every day gets a different, repeatable lesson.
 """
 import argparse
@@ -12,7 +12,7 @@ import json
 import os
 from pathlib import Path
 
-from generators import TOPICS, estimate_seconds, generate, generate_long, target_minutes
+from generators import TOPICS, estimate_seconds, generate, generate_long, pick_topic, target_minutes
 from safety import check_lesson
 
 
@@ -29,7 +29,7 @@ def main():
     today = datetime.date.today()
     slot = int(os.environ.get("SLOT") or 1)  # two videos a day: each gets its own topic and seed
     seed = args.seed if args.seed is not None else int(today.strftime("%Y%m%d")) * 10 + slot
-    topic = TOPICS[(today.toordinal() * 2 + slot - 1) % len(TOPICS)] if args.topic == "auto" else args.topic
+    topic = pick_topic(today, slot) if args.topic == "auto" else args.topic
 
     minutes = target_minutes(topic, seed) if args.minutes in ("auto", "") else float(args.minutes)
     lesson = generate_long(topic, seed, minutes)
