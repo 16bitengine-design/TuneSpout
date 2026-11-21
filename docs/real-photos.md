@@ -8,9 +8,9 @@ Cartoon characters (Amina, Jomo, Mei, Kofi, Yumbi, Lumbo) stay animated and reac
 1. `Lexicon.find_terms(script)` finds real-world words (plurals and baby animals included).
 2. `get_photo(term)` uses the local cache, then your Cloudinary library, then downloads a new photo (Openverse -> Wikimedia Commons).
    Candidates are rejected if tags look unsafe, if the photo is small (<800px) or blurry.
-3. `make_card()` builds a 9:16 card. The **whole** photo is shown, never cropped, with the word under it.
+3. `make_panel()` builds the upper-half photo panel. The **whole** photo is shown, never cropped, with the word under it.
 4. `plan_cues()` shows each photo the moment its word is sung (karaoke timestamps).
-5. `apply_cue()` cuts from the cartoon frame to the photo card (with a short fade).
+5. `apply_cue()` shows the panel in the upper half of the frame (with a short fade).
 
 ## Scripts
 - Write words normally: `The duck and her ducklings met a frog.`
@@ -31,8 +31,9 @@ Cartoon characters (Amina, Jomo, Mei, Kofi, Yumbi, Lumbo) stay animated and reac
 ## How it is wired into src/make_video.py
 - Lesson lines are written normally. Real-world words (and `[[tagged]]` ones) are found automatically.
 - Kokoro gives no word timings, so each word's time is estimated from the line's voiced length.
-- When a word is first said, the video cuts to a full-screen real-photo card (with the word) for
-  about 2.5 seconds, with a short fade. The same photo is not repeated within 20 seconds.
+- When a word is first said, a real photo (with the word under it) appears in the UPPER HALF of the
+  video for about 2.5 seconds, with a short fade. The cartoon scene, its caption and the kids stay
+  visible below. The same photo is not repeated within 20 seconds.
 - If a word has no photo, a warning is printed and the cartoon scene simply carries on.
 - Photo credits are added to the YouTube description in `meta.json` only (never on screen).
 - Any photo problem is caught, so it can never stop the daily video.
