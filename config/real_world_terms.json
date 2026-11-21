@@ -1,1 +1,67 @@
-
+{
+  "_note": "Single-word real-world things that must be shown as REAL PHOTOS. Add words freely. 'query' overrides the search text. Deliberately excluded for gentleness/COPPA review: snakes, spiders, sharks, crocodiles, wolves and anything on NEVER_USE (src/safety.py), e.g. the banned pig words.",
+  "irregular_plurals": {
+    "mouse": "mice", "goose": "geese", "leaf": "leaves", "calf": "calves",
+    "foal": "foals", "fish": "fish", "sheep": "sheep", "deer": "deer",
+    "child": "children", "loaf": "loaves", "knife": "knives", "tooth": "teeth",
+    "foot": "feet", "man": "men", "woman": "women", "ox": "oxen"
+  },
+  "ambiguous": ["orange", "bear", "ruler", "bat", "kid", "bark", "watch", "plant"],
+  "ambiguous_note": "Words with a non-photo meaning (orange the colour, bear the verb, ruler the king) are only matched when tagged in the script, e.g. [[orange]] for the fruit. Everything else is matched automatically.",
+  "categories": {
+    "animals_farm": {
+      "dog": {"query": "dog portrait"}, "puppy": {"query": "puppy"},
+      "cat": {"query": "cat portrait"}, "kitten": {"query": "kitten"},
+      "cow": {"query": "cow standing in field"}, "calf": {"query": "calf cow baby"},
+      "horse": {"query": "horse portrait"}, "foal": {"query": "foal baby horse"},
+      "sheep": {"query": "sheep standing"}, "lamb": {"query": "lamb baby sheep"},
+      "goat": {"query": "goat portrait"},
+      "hen": {"query": "hen chicken"}, "rooster": {"query": "rooster"}, "chicken": {"query": "chicken"},
+      "chick": {"query": "chick baby chicken"},
+      "duck": {"query": "mallard duck"}, "duckling": {"query": "duckling baby duck"},
+      "goose": {"query": "goose bird"}, "gosling": {"query": "gosling baby goose"},
+      "rabbit": {"query": "rabbit"}, "turkey": {"query": "turkey bird farm"}, "donkey": {"query": "donkey"}
+    },
+    "animals_wild": {
+      "frog": {"query": "green frog"}, "tadpole": {"query": "tadpole"}, "toad": {"query": "toad"},
+      "turtle": {"query": "turtle"}, "fish": {"query": "fish swimming"},
+      "elephant": {"query": "elephant"}, "giraffe": {"query": "giraffe"}, "zebra": {"query": "zebra"},
+      "lion": {"query": "lion"}, "cub": {"query": "lion cub"},
+      "monkey": {"query": "monkey"}, "bear": {"query": "brown bear"},
+      "deer": {"query": "deer"}, "fawn": {"query": "fawn baby deer"},
+      "owl": {"query": "owl"}, "owlet": {"query": "owlet baby owl"},
+      "swan": {"query": "swan"}, "cygnet": {"query": "cygnet baby swan"},
+      "penguin": {"query": "penguin"}, "parrot": {"query": "parrot"},
+      "butterfly": {"query": "butterfly on flower"}, "caterpillar": {"query": "caterpillar on leaf"},
+      "bee": {"query": "honey bee on flower"}, "ant": {"query": "ant close up"},
+      "ladybug": {"query": "ladybug"}, "snail": {"query": "snail"},
+      "dolphin": {"query": "dolphin"}, "whale": {"query": "whale"}, "crab": {"query": "crab on beach"},
+      "mouse": {"query": "mouse small rodent"}, "squirrel": {"query": "squirrel"}, "hippo": {"query": "hippopotamus"}
+    },
+    "plants_food": {
+      "tree": {"query": "tree full view"}, "flower": {"query": "flower"}, "leaf": {"query": "green leaf"},
+      "seed": {"query": "seeds"}, "grass": {"query": "green grass"},
+      "apple": {"query": "red apple"}, "banana": {"query": "banana"}, "orange": {"query": "orange fruit"},
+      "mango": {"query": "mango fruit"}, "pineapple": {"query": "pineapple"}, "watermelon": {"query": "watermelon"},
+      "grape": {"query": "grapes"}, "strawberry": {"query": "strawberry"}, "lemon": {"query": "lemon"},
+      "carrot": {"query": "carrot"}, "tomato": {"query": "tomato"}, "potato": {"query": "potato"},
+      "corn": {"query": "corn on the cob"}, "bread": {"query": "bread loaf"}, "egg": {"query": "egg"},
+      "milk": {"query": "glass of milk"}, "rice": {"query": "bowl of rice"}
+    },
+    "home_school_world": {
+      "table": {"query": "wooden table"}, "chair": {"query": "chair"}, "bed": {"query": "bed bedroom"},
+      "cup": {"query": "cup"}, "spoon": {"query": "spoon"}, "plate": {"query": "plate"},
+      "book": {"query": "open book"}, "pencil": {"query": "pencil"}, "ruler": {"query": "ruler"},
+      "ball": {"query": "ball"}, "bicycle": {"query": "bicycle"}, "car": {"query": "car"},
+      "bus": {"query": "bus"}, "boat": {"query": "boat on water"}, "house": {"query": "house"},
+      "school": {"query": "school building"}, "door": {"query": "door"}, "window": {"query": "window"},
+      "clock": {"query": "clock"}, "shoe": {"query": "shoe"}, "hat": {"query": "hat"},
+      "umbrella": {"query": "umbrella"}, "key": {"query": "key"}, "lamp": {"query": "lamp"},
+      "sun": {"query": "sun in blue sky"}, "moon": {"query": "moon"}, "cloud": {"query": "clouds blue sky"},
+      "river": {"query": "river"}, "mountain": {"query": "mountain"}
+    },
+    "money": {
+      "coin": {"query": "coins"}, "money": {"query": "coins and banknotes"}, "banknote": {"query": "banknote"}
+    }
+  }
+}
