@@ -11,7 +11,7 @@ Flow
 2. ``get_photo(term)``            -> download a free-licence photo (cached)
 3. ``make_card(photo, label)``    -> 9:16 card, whole photo uncropped + word label
 4. ``plan_cues(words)``           -> when each card appears (word timestamps)
-5. ``apply_cue(frame, cue, t)``   -> cut away from the cartoon frame to the photo card
+5. ``apply_cue(frame, cue, t)``   -> show the photo panel in the upper half of the frame
 
 No new API keys are needed. Photos come from Openverse and Wikimedia Commons (keyless,
 CC0 / public domain only). PIXABAY_API_KEY and PEXELS_API_KEY are optional extras. Found photos
@@ -482,6 +482,49 @@ def make_card(photo_path: str | Path, label: str, out_path: str | Path,
     return out
 
 
+PANEL_Y, PANEL_W, PANEL_H = 0.015, 0.92, 0.455  # share of the frame: top half, above the caption
+
+
+def panel_box(frame_size: tuple[int, int]) -> tuple[int, int, int, int]:
+    """(x, y, width, height) of the photo panel in a frame: the upper half of the video."""
+    W, H = frame_size
+    pw, ph = int(W * PANEL_W), int(H * PANEL_H)
+    return (W - pw) // 2, int(H * PANEL_Y), pw, ph
+
+
+def make_panel(photo_path: str | Path, label: str, out_path: str | Path,
+               frame_size: tuple[int, int] = (720, 1280)) -> Path:
+    """Photo panel for the UPPER HALF of the video: white rounded frame, the whole photo (never
+    cropped) and the word underneath. Saved as a PNG with rounded transparent corners."""
+    _, _, pw, ph = panel_box(frame_size)
+    photo = Image.open(photo_path).convert("RGB")
+    panel = Image.new("RGBA", (pw, ph), (0, 0, 0, 0))
+    d = ImageDraw.Draw(panel)
+    d.rounded_rectangle((0, 0, pw - 1, ph - 1), radius=int(pw * 0.05), fill=(255, 255, 255, 255))
+
+    font = _font(int(ph * 0.13))
+    box = d.textbbox((0, 0), label, font=font)
+    tw, th = box[2] - box[0], box[3] - box[1]
+    pad, border = int(ph * 0.025), int(pw * 0.025)
+    label_h = th + 2 * pad
+    fitted = ImageOps.contain(photo, (pw - 2 * border, ph - 3 * border - label_h))
+    px = (pw - fitted.size[0]) // 2
+    mask = Image.new("L", fitted.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, fitted.size[0] - 1, fitted.size[1] - 1),
+                                           radius=int(pw * 0.03), fill=255)
+    panel.paste(fitted, (px, border), mask)
+
+    by = border + fitted.size[1] + border
+    d.rounded_rectangle(((pw - tw) // 2 - 2 * pad, by, (pw + tw) // 2 + 2 * pad, by + label_h),
+                        radius=label_h // 2, fill=(255, 196, 61, 255))
+    d.text(((pw - tw) // 2 - box[0], by + pad - box[1]), label, font=font, fill=(60, 40, 20, 255))
+
+    out = Path(out_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    panel.save(out, "PNG")
+    return out
+
+
 def make_contact_sheet(records: list[PhotoRecord], out_path: str | Path, thumb: int = 260) -> Path:
     """One-image overview so a human can approve a batch of photos in seconds."""
     cols = 5
@@ -572,8 +615,9 @@ def add_credits_to_meta(meta_path: str | Path, records: list[PhotoRecord]) -> No
 
 
 def prepare_cues(cues: list[Cue], lex: Lexicon, providers=None, cache_dir: Path = CACHE_DIR,
-                 card_dir: Path = CARD_DIR, size=(1080, 1920), downloader=_download):
-    """Fetch photos + render cards for every cue. Cues with no photo are dropped (and reported)."""
+                 card_dir: Path = CARD_DIR, size=(720, 1280), downloader=_download):
+    """Fetch photos + render upper-half panels for every cue (``size`` = the video frame size).
+    Cues with no photo are dropped (and reported)."""
     ready, records = [], {}
     for cue in cues:
         if cue.term not in records:
@@ -582,7 +626,7 @@ def prepare_cues(cues: list[Cue], lex: Lexicon, providers=None, cache_dir: Path 
         if rec is None:
             print(f"[photos] WARNING: lesson mentions '{cue.term}' but no real photo was found")
             continue
-        cue.image = str(make_card(rec.path, cue.label, Path(card_dir) / f"{cue.term}.png", size))
+        cue.image = str(make_panel(rec.path, cue.label, Path(card_dir) / f"{cue.term}.png", size))
         ready.append(cue)
     return ready, [r for r in records.values() if r]
 
@@ -595,18 +639,29 @@ def active_cue(cues: list[Cue], t: float) -> Optional[Cue]:
 
 
 @lru_cache(maxsize=16)
-def _load_card(path: str, size: tuple[int, int]) -> Image.Image:
-    return Image.open(path).convert("RGB").resize(size, Image.LANCZOS)
+def _load_panel(path: str) -> Image.Image:
+    return Image.open(path).convert("RGBA")
 
 
 def apply_cue(frame: Image.Image, cue: Optional[Cue], t: float, fade: float = 0.25) -> Image.Image:
-    """Cut away from the cartoon frame to the real-photo card (quick fade in/out).
-    Use inside the frame loop: frame = apply_cue(render.draw_scene(sc, t), active_cue(cues, t), t)."""
+    """Show the real-photo panel in the UPPER HALF of the frame (quick fade in/out) while the
+    cartoon scene and its caption stay visible below. Use inside the frame loop:
+    frame = apply_cue(render.draw_scene(sc, t), active_cue(cues, t), t)."""
     if cue is None:
         return frame
     a = max(0.0, min(1.0, (t - cue.start) / fade, (cue.end - t) / fade))
-    card = _load_card(cue.image, frame.size)
-    return Image.blend(frame.convert("RGB"), card, a) if a < 1 else card.copy()
+    if a <= 0:
+        return frame
+    panel = _load_panel(cue.image)
+    x, y, pw, ph = panel_box(frame.size)
+    if panel.size != (pw, ph):
+        panel = panel.resize((pw, ph), Image.LANCZOS)
+    mask = panel.getchannel("A")
+    if a < 1:
+        mask = mask.point(lambda v: int(v * a))
+    out = frame.convert("RGB")
+    out.paste(panel.convert("RGB"), (x, y), mask)
+    return out
 
 
 # ------------------------------------------------------------------- CLI ----
