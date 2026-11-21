@@ -13,17 +13,21 @@ Flow
 4. ``plan_cues(words)``           -> when each card appears (word timestamps)
 5. ``apply_cue(frame, cue, t)``   -> cut away from the cartoon frame to the photo card
 
-Secrets come only from environment variables (GitHub Secrets):
-PEXELS_API_KEY, PIXABAY_API_KEY. Wikimedia Commons needs no key.
+No new API keys are needed. Photos come from Openverse and Wikimedia Commons (keyless,
+CC0 / public domain only). PIXABAY_API_KEY and PEXELS_API_KEY are optional extras. Found photos
+are kept in your existing Cloudinary account (CLOUDINARY_* secrets already used by
+buffer_post.py), so each word is downloaded once and reused by every later run.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import os
 import re
-from dataclasses import asdict, dataclass, field
+import time
+from dataclasses import asdict, dataclass, field, fields
 from datetime import date
 from pathlib import Path
 from functools import lru_cache
@@ -241,8 +245,30 @@ class WikimediaProvider:
         return out
 
 
+class OpenverseProvider:
+    """Keyless (anonymous, rate-limited). Asks only for CC0 / Public Domain Mark photographs."""
+    name = "openverse"
+    LABELS = {"cc0": "CC0 1.0", "pdm": "Public Domain Mark"}
+
+    def search(self, query: str) -> list[Candidate]:
+        data = _get("https://api.openverse.org/v1/images/",
+                    headers={"User-Agent": "kids-learning-cartoons"},
+                    params={"q": query, "license": "cc0,pdm", "category": "photograph",
+                            "mature": "false", "page_size": 20}).json()
+        out = []
+        for h in data.get("results", []):
+            label = self.LABELS.get(str(h.get("license", "")).lower(), "")
+            if not license_allowed(label):
+                continue
+            tags = " ".join([t.get("name", "") for t in (h.get("tags") or [])] + [h.get("title") or ""])
+            out.append(Candidate(h.get("url", ""), self.name, h.get("creator") or "",
+                                 h.get("foreign_landing_url") or "", label, tags))
+        return out
+
+
 def default_providers() -> list[Provider]:
-    return [PixabayProvider(), PexelsProvider(), WikimediaProvider()]
+    # Pixabay / Pexels quietly return nothing unless their optional keys are set.
+    return [OpenverseProvider(), WikimediaProvider(), PixabayProvider(), PexelsProvider()]
 
 
 # --------------------------------------------------------------- quality ----
@@ -291,10 +317,74 @@ def _download(url: str) -> bytes:
     return data
 
 
+def cloudinary_signature(params: dict, secret: str) -> str:
+    to_sign = "&".join(f"{k}={params[k]}" for k in sorted(params))
+    return hashlib.sha1((to_sign + secret).encode()).hexdigest()
+
+
+class CloudinaryStore:
+    """Permanent photo library in your Cloudinary account (folder tunespout-photos/).
+
+    Reading needs only CLOUDINARY_CLOUD_NAME (the photos are public links). Saving also needs
+    CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET, the same secrets buffer_post.py already uses.
+    buffer_post's tidy-up only touches 'tunespout/' videos, so it never deletes these.
+    """
+    FOLDER = "tunespout-photos"
+
+    def __init__(self, cloud: str, api_key: Optional[str] = None, api_secret: Optional[str] = None):
+        self.cloud, self.api_key, self.api_secret = cloud, api_key, api_secret
+
+    @classmethod
+    def from_env(cls) -> Optional["CloudinaryStore"]:
+        cloud = os.environ.get("CLOUDINARY_CLOUD_NAME")
+        return cls(cloud, os.environ.get("CLOUDINARY_API_KEY"),
+                   os.environ.get("CLOUDINARY_API_SECRET")) if cloud else None
+
+    def _url(self, kind: str, name: str) -> str:
+        return f"https://res.cloudinary.com/{self.cloud}/{kind}/upload/{self.FOLDER}/{name}"
+
+    def load(self, term: str, cache_dir: Path) -> Optional["PhotoRecord"]:
+        try:
+            meta = _get(self._url("raw", f"{term}.json")).json()
+            img = _get(self._url("image", f"{term}.jpg")).content
+            img_path = Path(cache_dir) / f"{term}.jpg"
+            img_path.write_bytes(img)
+            meta["path"] = str(img_path)
+            keep = {f.name for f in fields(PhotoRecord)}
+            rec = PhotoRecord(**{k: v for k, v in meta.items() if k in keep})
+            (Path(cache_dir) / f"{term}.json").write_text(json.dumps(asdict(rec), indent=2))
+            return rec
+        except Exception:
+            return None  # not in the library yet
+
+    def _upload(self, kind: str, public_id: str, data: bytes, filename: str) -> None:
+        import requests
+
+        params = {"public_id": public_id, "timestamp": str(int(time.time())), "overwrite": "true"}
+        sig = cloudinary_signature(params, self.api_secret)
+        r = requests.post(f"https://api.cloudinary.com/v1_1/{self.cloud}/{kind}/upload",
+                          data={**params, "api_key": self.api_key, "signature": sig},
+                          files={"file": (filename, data)}, timeout=120)
+        r.raise_for_status()
+
+    def save(self, rec: "PhotoRecord") -> None:
+        if not (self.api_key and self.api_secret):
+            return
+        try:
+            self._upload("image", f"{self.FOLDER}/{rec.term}", Path(rec.path).read_bytes(), f"{rec.term}.jpg")
+            self._upload("raw", f"{self.FOLDER}/{rec.term}.json",
+                         json.dumps(asdict(rec), indent=2).encode(), f"{rec.term}.json")
+        except Exception as exc:  # the library is a bonus; never stop a video for it
+            print(f"[photos] could not save '{rec.term}' to Cloudinary: {exc}")
+
+
 def get_photo(term: str, lex: Lexicon, providers: Optional[Iterable[Provider]] = None,
               cache_dir: Path = CACHE_DIR, refresh: bool = False,
-              downloader=_download) -> Optional[PhotoRecord]:
-    """Return a cached or freshly fetched real photo for ``term`` (None if nothing passes)."""
+              downloader=_download, store="env") -> Optional[PhotoRecord]:
+    """Return a cached or freshly fetched real photo for ``term`` (None if nothing passes).
+    Order: local cache -> Cloudinary library -> download a new one (then save it to both)."""
+    if store == "env":
+        store = CloudinaryStore.from_env()
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     img_path, meta_path = cache_dir / f"{term}.jpg", cache_dir / f"{term}.json"
@@ -304,6 +394,10 @@ def get_photo(term: str, lex: Lexicon, providers: Optional[Iterable[Provider]] =
     query = lex.entries[term]["query"]
     if is_banned(query) or is_banned(term):
         raise ValueError(f"'{term}' is banned for this channel")
+    if store and not refresh:
+        rec = store.load(term, cache_dir)
+        if rec:
+            return rec
 
     for provider in (providers if providers is not None else default_providers()):
         try:
@@ -327,6 +421,8 @@ def get_photo(term: str, lex: Lexicon, providers: Optional[Iterable[Provider]] =
             rec = PhotoRecord(term, str(img_path), cand.source, cand.author, cand.page_url,
                               cand.license, query, date.today().isoformat())
             meta_path.write_text(json.dumps(asdict(rec), indent=2))
+            if store:
+                store.save(rec)
             return rec
     print(f"[photos] no suitable photo found for '{term}'")
     return None
