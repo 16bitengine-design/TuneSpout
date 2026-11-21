@@ -256,3 +256,27 @@ def test_store_load_reads_public_links(tmp_path, monkeypatch):
     rec = store.load("duck", tmp_path)
     assert rec and Path(rec.path).exists() and rec.path.startswith(str(tmp_path))
     assert store.load("zebra", tmp_path) is None
+
+
+def test_word_times_and_scene_cues(lex):
+    w = rp.estimate_word_times("One duck swims", 10.0, 3.0)
+    assert w[0]["start"] == 10.0 and abs(w[-1]["end"] - 13.0) < 1e-6
+    scenes = [{"line": "One little duck swims.", "_tagged": "One little duck swims."},
+              {"line": "An orange for the frog.", "_tagged": "An [[orange]] for the frog."}]
+    cues = rp.cues_for_scenes(scenes, [3.0, 3.0], lex)
+    assert [c.term for c in cues] == ["duck", "orange", "frog"]
+    assert cues[0].start < 3.0 <= cues[1].start            # 2nd scene starts after the first
+    assert cues[1].start < cues[2].start
+
+
+def test_credits_go_into_description_only(tmp_path):
+    import json
+    meta = tmp_path / "meta.json"
+    meta.write_text(json.dumps({"title": "T", "description": "Hello"}))
+    r = rp.PhotoRecord("duck", "x.jpg", "openverse", "A. Person", "https://p/1", "CC0 1.0", "duck")
+    rp.add_credits_to_meta(meta, [r])
+    data = json.loads(meta.read_text())
+    assert data["description"].startswith("Hello") and "Photo credits:" in data["description"]
+    assert data["title"] == "T"
+    rp.add_credits_to_meta(meta, [])                         # nothing to add: unchanged
+    assert json.loads(meta.read_text()) == data
