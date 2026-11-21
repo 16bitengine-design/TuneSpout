@@ -6,7 +6,7 @@ Cartoon characters (Amina, Jomo, Mei, Kofi, Yumbi, Lumbo) stay animated and reac
 
 ## How it works
 1. `Lexicon.find_terms(script)` finds real-world words (plurals and baby animals included).
-2. `get_photo(term)` fetches a photo: Pixabay -> Pexels -> Wikimedia Commons (free licences).
+2. `get_photo(term)` uses the local cache, then your Cloudinary library, then downloads a new photo (Openverse -> Wikimedia Commons).
    Candidates are rejected if tags look unsafe, if the photo is small (<800px) or blurry.
 3. `make_card()` builds a 9:16 card. The **whole** photo is shown, never cropped, with the word under it.
 4. `plan_cues()` shows each photo the moment its word is sung (karaoke timestamps).
@@ -18,21 +18,15 @@ Cartoon characters (Amina, Jomo, Mei, Kofi, Yumbi, Lumbo) stay animated and reac
   Run `strip_tags()` before TTS and subtitles.
 - Add new things in `config/real_world_terms.json`. Banned words (e.g. pig) are refused at load time.
 
-## GitHub setup
-Add repository secrets `PIXABAY_API_KEY` and `PEXELS_API_KEY` (Wikimedia needs none), then in the workflow:
-
-```yaml
-      - uses: actions/cache@v4
-        with:
-          path: cache/photos
-          key: photos-${{ hashFiles('config/real_world_terms.json') }}
-          restore-keys: photos-
-      - run: pip install -r requirements.txt
-      - run: python src/real_photos.py fetch duck duckling frog dog cat --sheet output/photo_review.png
-        env:
-          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-```
+## GitHub setup (no new keys)
+- Photos come from **Openverse** and **Wikimedia Commons**: no key, CC0 / public domain only.
+  `PIXABAY_API_KEY` and `PEXELS_API_KEY` are optional extras; leave them out.
+- Found photos are saved in your Cloudinary account (folder `tunespout-photos/`) using the
+  `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` secrets that
+  `buffer_post.py` already uses. Each word is downloaded once, then reused by every later run.
+  Add those three to the video-building step's `env:` if they are not there yet.
+- To pre-load words (and get a review sheet), run:
+  `python src/real_photos.py fetch duck duckling frog dog cat --sheet out/photo_review.png`
 
 ## Integration in the video builder (src/make_video.py frame loop)
 ```python
@@ -49,7 +43,7 @@ description += "\n\n" + credits_text(records)                         # credits:
 ## Copyright policy (strict)
 - **Credits go in the video description only.** `credits_text(records)` builds them; nothing is
   ever drawn on the video or the cards.
-- **Accepted licences:** Pixabay Content License, Pexels License, and CC0 / public domain.
+- **Accepted licences:** CC0 / public domain (Openverse, Wikimedia). Pixabay / Pexels licences only if you add those optional keys.
   CC BY is **off by default** (set `ALLOW_CC_BY=1` to allow it, credited in the description).
   ShareAlike, NonCommercial, NoDerivatives and "all rights reserved" are never accepted.
 - **Rights a licence does not cover are filtered by tags:** photos tagged with people (model
