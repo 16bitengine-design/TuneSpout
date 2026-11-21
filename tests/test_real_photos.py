@@ -12,6 +12,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 import real_photos as rp  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def no_cloudinary_env(monkeypatch):
+    for k in ("CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET", "ALLOW_CC_BY"):
+        monkeypatch.delenv(k, raising=False)
+
+
 @pytest.fixture(scope="module")
 def lex():
     return rp.Lexicon.load()
@@ -166,3 +172,87 @@ def _photo(tmp_path):
     p = tmp_path / "p.jpg"
     Image.fromarray(np.random.default_rng(2).integers(0, 255, (400, 600, 3), dtype=np.uint8)).save(p)
     return p
+
+
+class FakeResp:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def json(self):
+        return self.payload
+
+
+def test_openverse_keeps_only_cc0_and_pdm(monkeypatch):
+    payload = {"results": [
+        {"url": "u1", "license": "cc0", "creator": "A", "foreign_landing_url": "p1",
+         "tags": [{"name": "duck"}], "title": "Pond"},
+        {"url": "u2", "license": "pdm", "creator": "B", "tags": [], "title": "x"},
+        {"url": "u3", "license": "by", "creator": "C", "tags": [], "title": "x"},
+        {"url": "u4", "license": "by-sa", "creator": "D", "tags": [], "title": "x"}]}
+    monkeypatch.setattr(rp, "_get", lambda *a, **k: FakeResp(payload))
+    got = rp.OpenverseProvider().search("duck")
+    assert [c.url for c in got] == ["u1", "u2"]
+    assert got[0].license == "CC0 1.0" and "duck" in got[0].tags
+
+
+def test_default_providers_work_without_any_keys(monkeypatch):
+    for k in ("PIXABAY_API_KEY", "PEXELS_API_KEY"):
+        monkeypatch.delenv(k, raising=False)
+    names = [p.name for p in rp.default_providers()]
+    assert names[:2] == ["openverse", "wikimedia"]
+    assert rp.PixabayProvider().search("duck") == [] and rp.PexelsProvider().search("duck") == []
+
+
+def test_cloudinary_signature_matches_buffer_post_method():
+    import hashlib
+    params = {"public_id": "a/b", "timestamp": "1", "overwrite": "true"}
+    expect = hashlib.sha1(b"overwrite=true&public_id=a/b&timestamp=1SECRET").hexdigest()
+    assert rp.cloudinary_signature(params, "SECRET") == expect
+
+
+class FakeStore:
+    def __init__(self, have=None):
+        self.have, self.saved = have, []
+
+    def load(self, term, cache_dir):
+        return self.have
+
+    def save(self, rec):
+        self.saved.append(rec.term)
+
+
+def test_library_hit_skips_downloads_and_new_photo_is_saved(lex, tmp_path):
+    img = tmp_path / "duck.jpg"
+    img.write_bytes(sharp_jpeg())
+    hit = rp.PhotoRecord("duck", str(img), "openverse", "A", "p", "CC0 1.0", "q")
+    assert rp.get_photo("duck", lex, [], tmp_path / "c1", store=FakeStore(hit),
+                        downloader=lambda u: 1 / 0) is hit
+    store = FakeStore()
+    rec = rp.get_photo("frog", lex, [FakeProvider([rp.Candidate("u", "fake", tags="frog")])],
+                       tmp_path / "c2", store=store, downloader=lambda u: sharp_jpeg())
+    assert rec and store.saved == ["frog"]
+
+
+def test_store_load_reads_public_links(tmp_path, monkeypatch):
+    meta = {"term": "duck", "path": "/old/runner/path.jpg", "source": "openverse", "author": "A",
+            "page_url": "p", "license": "CC0 1.0", "query": "q", "retrieved": "2026-11-21", "extra": 1}
+
+    class R:
+        def __init__(self, c, j=None):
+            self.content, self._j = c, j
+
+        def json(self):
+            return self._j
+
+    def fake_get(url, **kw):
+        if url.endswith("duck.json"):
+            return R(b"", meta)
+        if url.endswith("duck.jpg"):
+            return R(sharp_jpeg())
+        raise RuntimeError("404")
+
+    monkeypatch.setattr(rp, "_get", fake_get)
+    store = rp.CloudinaryStore("mycloud")
+    rec = store.load("duck", tmp_path)
+    assert rec and Path(rec.path).exists() and rec.path.startswith(str(tmp_path))
+    assert store.load("zebra", tmp_path) is None
