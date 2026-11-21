@@ -157,14 +157,21 @@ def test_pig_prefix_is_banned(lex):
     assert rp.is_banned("a piglet") and rp.is_banned("pigs") and not rp.is_banned("duck")
 
 
-def test_apply_cue_cuts_to_photo_with_fade(tmp_path):
-    card = rp.make_card(_photo(tmp_path), "Duck", tmp_path / "c.png", size=(360, 640))
-    cue = rp.Cue("duck", "Duck", 1.0, 3.0, str(card))
-    frame = Image.new("RGB", (360, 640), (255, 0, 0))
+def test_apply_cue_shows_panel_in_upper_half_only(tmp_path):
+    size = (360, 640)
+    panel = rp.make_panel(_photo(tmp_path), "Duck", tmp_path / "c.png", size)
+    cue = rp.Cue("duck", "Duck", 1.0, 3.0, str(panel))
+    red = (255, 0, 0)
+    frame = Image.new("RGB", size, red)
     assert rp.apply_cue(frame, None, 0.5) is frame
-    assert rp.apply_cue(frame, cue, 2.0).getpixel((5, 5)) != (255, 0, 0)       # fully the card
-    mid = rp.apply_cue(frame, cue, 1.1).getpixel((5, 5))                        # fading in: a blend
-    assert mid not in ((255, 0, 0), rp.apply_cue(frame, cue, 2.0).getpixel((5, 5)))
+    x, y, pw, ph = rp.panel_box(size)
+    assert y + ph < size[1] * 0.5                                    # panel stays in the upper half
+    shown = rp.apply_cue(frame, cue, 2.0)
+    assert shown.getpixel((size[0] // 2, y + ph // 2)) != red        # photo area is covered
+    assert shown.getpixel((size[0] // 2, int(size[1] * 0.75))) == red  # lower half untouched
+    assert shown.getpixel((2, 2)) == red                             # outside the panel untouched
+    fading = rp.apply_cue(frame, cue, 1.1).getpixel((size[0] // 2, y + 8))
+    assert fading not in (red, shown.getpixel((size[0] // 2, y + 8)))   # fade = a blend
     assert rp.active_cue([cue], 0.5) is None and rp.active_cue([cue], 1.5) is cue
 
 
