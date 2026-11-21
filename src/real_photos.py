@@ -535,6 +535,42 @@ def plan_cues(words: list[dict], lex: Lexicon, hold: float = 2.5, min_hold: floa
     return cues
 
 
+def estimate_word_times(text: str, start: float, voiced: float) -> list[dict]:
+    """Spread the words of one spoken line over its voiced time (longer words take longer).
+    Kokoro gives no word timings, so this estimate is used; it is close enough to time a photo."""
+    toks = text.split()
+    weights = [len(strip_tags(t)) + 2 for t in toks]
+    total = sum(weights) or 1
+    out, t = [], start
+    for tok, w in zip(toks, weights):
+        d = voiced * w / total
+        out.append({"word": tok, "start": t, "end": t + d})
+        t += d
+    return out
+
+
+def cues_for_scenes(scenes: list[dict], durations: list[float], lex: Lexicon,
+                    pause: float = 0.6, **kw) -> list[Cue]:
+    """Photo cues for a run of lesson scenes. Uses each scene's tagged line (``_tagged``) if present.
+    ``durations`` are the scene lengths including the ``pause`` of silence after each line."""
+    words, offset = [], 0.0
+    for sc, dur in zip(scenes, durations):
+        text = sc.get("_tagged") or sc.get("line", "")
+        words += estimate_word_times(text, offset, max(dur - pause, 0.1))
+        offset += dur
+    return plan_cues(words, lex, **kw)
+
+
+def add_credits_to_meta(meta_path: str | Path, records: list[PhotoRecord]) -> None:
+    """Append the photo credits to the YouTube description in meta.json (description only)."""
+    if not records:
+        return
+    p = Path(meta_path)
+    meta = json.loads(p.read_text(encoding="utf-8"))
+    meta["description"] = meta.get("description", "").rstrip() + "\n\n" + credits_text(records)
+    p.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
 def prepare_cues(cues: list[Cue], lex: Lexicon, providers=None, cache_dir: Path = CACHE_DIR,
                  card_dir: Path = CARD_DIR, size=(1080, 1920), downloader=_download):
     """Fetch photos + render cards for every cue. Cues with no photo are dropped (and reported)."""

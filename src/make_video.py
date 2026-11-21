@@ -18,6 +18,7 @@ import music
 import render
 import tts
 import branding
+import real_photos
 from characters.cast import voice_for
 from kids_scene import plan_positions
 from metadata import write_metadata
@@ -54,6 +55,16 @@ def render_episode(lesson, clips, durations, out):
     wav = out / "audio.wav"
     sf.write(wav, mix, SR)
 
+    # real photos: when a lesson names something from the real world, cut to a real photo of it
+    cues, records = [], []
+    try:
+        lex = real_photos.Lexicon.load()
+        cues = real_photos.cues_for_scenes(lesson["scenes"], durations, lex, pause=PAUSE)
+        cues, records = real_photos.prepare_cues(cues, lex, size=(render.W, render.H))
+    except Exception as err:  # photos are a bonus: never stop the daily video because of them
+        print("Real photos skipped:", err)
+        cues, records = [], []
+
     mp4 = out / "video.mp4"
     cmd = [
         "ffmpeg", "-y", "-loglevel", "error",
@@ -64,16 +75,21 @@ def render_episode(lesson, clips, durations, out):
         "-c:a", "aac", "-b:a", "160k", "-shortest", str(mp4),
     ]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    start = 0.0  # where this scene begins in the episode, so photo cues line up
     for sc, dur in zip(lesson["scenes"], durations):
         for f in range(int(dur * FPS)):
+            t = start + f / FPS
             frame = render.draw_scene(sc, f / FPS)
+            frame = real_photos.apply_cue(frame, real_photos.active_cue(cues, t), t)
             proc.stdin.write(frame.tobytes())
+        start += dur
     proc.stdin.close()
     if proc.wait() != 0:
         raise SystemExit("ffmpeg failed")
 
     # automatic titles, descriptions and hashtags
     write_metadata(lesson, out)
+    real_photos.add_credits_to_meta(out / "meta.json", records)  # credits: YouTube description only
     try:
         branding.thumbnail(lesson).save(out / "thumbnail.png", optimize=True)
     except StopIteration:  # a hand-written lesson with no kids: no thumbnail
@@ -90,6 +106,9 @@ def main():
 
     lesson = json.loads(Path(args.lesson).read_text())
     check_lesson(lesson)  # raises if anything is not kid-safe
+    for sc in lesson["scenes"]:  # [[orange]] style photo tags: keep for the photos, hide from voice and captions
+        sc["_tagged"] = sc.get("line", "")
+        sc["line"] = real_photos.strip_tags(sc["line"])
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
