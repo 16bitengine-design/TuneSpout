@@ -28,17 +28,14 @@ Cartoon characters (Amina, Jomo, Mei, Kofi, Yumbi, Lumbo) stay animated and reac
 - To pre-load words (and get a review sheet), run:
   `python src/real_photos.py fetch duck duckling frog dog cat --sheet out/photo_review.png`
 
-## Integration in the video builder (src/make_video.py frame loop)
-```python
-from real_photos import Lexicon, plan_cues, prepare_cues, active_cue, apply_cue, credits_text
-lex = Lexicon.load()
-cues = plan_cues(word_timestamps, lex)        # word times from the voice alignment
-cues, records = prepare_cues(cues, lex)       # fetch photos + render cards
-...
-frame = apply_cue(render.draw_scene(sc, t), active_cue(cues, t), t)   # t = seconds in the episode
-...
-description += "\n\n" + credits_text(records)                         # credits: description only
-```
+## How it is wired into src/make_video.py
+- Lesson lines are written normally. Real-world words (and `[[tagged]]` ones) are found automatically.
+- Kokoro gives no word timings, so each word's time is estimated from the line's voiced length.
+- When a word is first said, the video cuts to a full-screen real-photo card (with the word) for
+  about 2.5 seconds, with a short fade. The same photo is not repeated within 20 seconds.
+- If a word has no photo, a warning is printed and the cartoon scene simply carries on.
+- Photo credits are added to the YouTube description in `meta.json` only (never on screen).
+- Any photo problem is caught, so it can never stop the daily video.
 
 ## Copyright policy (strict)
 - **Credits go in the video description only.** `credits_text(records)` builds them; nothing is
