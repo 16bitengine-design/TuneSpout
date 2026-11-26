@@ -454,7 +454,14 @@
       "status": "posted"
     },
     "title": "Baby Animals with Kofi and Jomo | Animals for Kids",
-    "topic": "babyanimals"
+    "topic": "babyanimals",
+    "youtube": {
+      "id": "6b08b29ca784564d7d8e45d6",
+      "ids": [
+        "6b08b29ca784564d7d8e45d6"
+      ],
+      "status": "posted"
+    }
   },
   "_last_run": "2026-11-26"
 }
