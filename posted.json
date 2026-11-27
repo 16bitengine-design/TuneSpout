@@ -491,7 +491,15 @@
       "status": "posted"
     },
     "title": "Fun Sports with Amina and Mei | Sports for Kids",
-    "topic": "sports"
+    "topic": "sports",
+    "youtube": {
+      "id": "6b0a001123fb5b7700f79d7d",
+      "ids": [
+        "6b0a001123fb5b7700f79d7d",
+        "6b0a001623fb5b7700f7a12d"
+      ],
+      "status": "posted"
+    }
   },
   "_last_run": "2026-11-27"
 }
